@@ -1,0 +1,59 @@
+<form [formGroup]="surveyForm" (ngSubmit)="onSubmit()" class="p-4 bg-light rounded">
+  <div class="mb-3">
+    <label for="title" class="form-label">Title</label>
+    <input 
+      type="text" 
+      class="form-control" 
+      id="title" 
+      formControlName="title"
+      [class.is-invalid]="surveyForm.get('title')?.invalid && surveyForm.get('title')?.touched"
+    >
+    <div class="invalid-feedback" *ngIf="surveyForm.get('title')?.errors?.['required']">
+      Title is required
+    </div>
+    <div class="invalid-feedback" *ngIf="surveyForm.get('title')?.errors?.['minlength']">
+      Title must be at least 3 characters
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <label for="description" class="form-label">Description</label>
+    <textarea 
+      class="form-control" 
+      id="description" 
+      formControlName="description"
+      rows="3"
+      [class.is-invalid]="surveyForm.get('description')?.invalid && surveyForm.get('description')?.touched"
+    ></textarea>
+    <div class="invalid-feedback" *ngIf="surveyForm.get('description')?.errors?.['maxlength']">
+      Description must be less than 255 characters
+    </div>
+  </div>
+
+  <div formGroupName="owner" class="mb-3">
+    <h4>Owner Information</h4>
+    <div class="mb-3">
+      <label for="ownerName" class="form-label">Name</label>
+      <input 
+        type="text" 
+        class="form-control" 
+        id="ownerName" 
+        formControlName="name"
+        [class.is-invalid]="surveyForm.get('owner.name')?.invalid && surveyForm.get('owner.name')?.touched"
+      >
+      <div class="invalid-feedback" *ngIf="surveyForm.get('owner.name')?.errors?.['required']">
+        Owner name is required
+      </div>
+      <div class="invalid-feedback" *ngIf="surveyForm.get('owner.name')?.errors?.['minlength']">
+        Name must be at least 3 characters
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex gap-2">
+    <button type="submit" class="btn btn-primary" [disabled]="!surveyForm.valid">
+      {{ survey ? 'Update' : 'Create' }}
+    </button>
+    <button type="button" class="btn btn-secondary" (click)="onCancel()">Cancel</button>
+  </div>
+</form>

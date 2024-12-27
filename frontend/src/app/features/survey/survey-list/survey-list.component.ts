@@ -1,8 +1,8 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Survey } from '../../core/models/survey.model';
-import { SurveyService } from '../../core/services/survey.service';
-import { SurveyFormComponent } from './survey-form.component';
+import { Survey } from '../../../core/models/survey.model';
+import { SurveyService } from '../../../core/services/survey.service';
+import { SurveyFormComponent } from '../survey-form/survey-form.component';
 
 @Component({
   selector: 'app-survey-list',
@@ -13,7 +13,7 @@ import { SurveyFormComponent } from './survey-form.component';
 })
 export class SurveyListComponent implements OnInit {
   private surveyService = inject(SurveyService);
-
+  
   surveys: Survey[] = [];
   showForm = false;
 
@@ -45,6 +45,7 @@ export class SurveyListComponent implements OnInit {
   }
 
   navigateToEdition(editionId: number) {
+    // TODO: Implement navigation to edition detail page
     console.log('Navigating to edition:', editionId);
   }
 }

@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Survey } from '../../core/models/survey.model';
+import { Survey } from '../../../core/models/survey.model';
 
 @Component({
   selector: 'app-survey-form',

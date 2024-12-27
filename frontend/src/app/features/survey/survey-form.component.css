@@ -1,0 +1,12 @@
+/* Vous pouvez ajouter des styles spécifiques au composant ici */
+.form-label {
+    font-weight: 500;
+}
+
+.invalid-feedback {
+    font-size: 0.875rem;
+}
+
+.btn {
+    min-width: 100px;
+}
