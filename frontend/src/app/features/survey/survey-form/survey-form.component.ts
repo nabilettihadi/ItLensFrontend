@@ -1,6 +1,7 @@
-import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+
 import { Survey } from '../../../core/models/survey.model';
 
 @Component({
@@ -11,27 +12,29 @@ import { Survey } from '../../../core/models/survey.model';
   styleUrls: ['./survey-form.component.css']
 })
 export class SurveyFormComponent {
-  private fb = inject(FormBuilder);
-  
   @Input() survey?: Survey;
   @Output() save = new EventEmitter<Survey>();
   @Output() cancel = new EventEmitter<void>();
 
-  surveyForm: FormGroup = this.fb.group({
-    title: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(100)]],
-    description: ['', [Validators.maxLength(255)]],
-    owner: this.fb.group({
-      name: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(50)]]
-    })
-  });
+  surveyForm: FormGroup;
 
-  ngOnInit() {
+  constructor(private fb: FormBuilder) {
+    this.surveyForm = this.fb.group({
+      title: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(100)]],
+      description: ['', [Validators.maxLength(255)]],
+      owner: this.fb.group({
+        name: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(50)]]
+      })
+    });
+  }
+
+  ngOnInit(): void {
     if (this.survey) {
       this.surveyForm.patchValue(this.survey);
     }
   }
 
-  onSubmit() {
+  onSubmit(): void {
     if (this.surveyForm.valid) {
       const surveyData: Survey = {
         ...this.survey,
@@ -39,7 +42,7 @@ export class SurveyFormComponent {
       };
       this.save.emit(surveyData);
     } else {
-      Object.keys(this.surveyForm.controls).forEach(key => {
+      Object.keys(this.surveyForm.controls).forEach((key: string) => {
         const control = this.surveyForm.get(key);
         if (control?.invalid) {
           control.markAsTouched();
@@ -48,7 +51,7 @@ export class SurveyFormComponent {
     }
   }
 
-  onCancel() {
+  onCancel(): void {
     this.cancel.emit();
   }
 }

@@ -1,0 +1,84 @@
+<div class="card">
+  <div class="card-header">
+    <h4>{{ surveyId ? 'Create Survey Edition for Survey' : 'Create Survey Edition' }}</h4>
+  </div>
+  <div class="card-body">
+    <form [formGroup]="surveyEditionForm" (ngSubmit)="onSubmit()">
+      <div class="mb-3">
+        <label for="year" class="form-label">Year</label>
+        <input 
+          type="number" 
+          class="form-control" 
+          id="year" 
+          formControlName="year"
+          [ngClass]="{'is-invalid': surveyEditionForm.get('year')?.invalid && surveyEditionForm.get('year')?.touched}"
+        >
+        <div 
+          *ngIf="surveyEditionForm.get('year')?.invalid && surveyEditionForm.get('year')?.touched" 
+          class="invalid-feedback"
+        >
+          <div *ngIf="surveyEditionForm.get('year')?.errors?.['required']">
+            Year is required
+          </div>
+          <div *ngIf="surveyEditionForm.get('year')?.errors?.['min']">
+            Year must be after 1900
+          </div>
+          <div *ngIf="surveyEditionForm.get('year')?.errors?.['max']">
+            Year must be before 2100
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="creationDate" class="form-label">Creation Date</label>
+        <input 
+          type="date" 
+          class="form-control" 
+          id="creationDate" 
+          formControlName="creationDate"
+          [ngClass]="{'is-invalid': surveyEditionForm.get('creationDate')?.invalid && surveyEditionForm.get('creationDate')?.touched}"
+        >
+        <div 
+          *ngIf="surveyEditionForm.get('creationDate')?.invalid && surveyEditionForm.get('creationDate')?.touched" 
+          class="invalid-feedback"
+        >
+          Creation Date is required
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="startDate" class="form-label">Start Date</label>
+        <input 
+          type="date" 
+          class="form-control" 
+          id="startDate" 
+          formControlName="startDate"
+          [ngClass]="{'is-invalid': surveyEditionForm.get('startDate')?.invalid && surveyEditionForm.get('startDate')?.touched}"
+        >
+        <div 
+          *ngIf="surveyEditionForm.get('startDate')?.invalid && surveyEditionForm.get('startDate')?.touched" 
+          class="invalid-feedback"
+        >
+          Start Date is required
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-end">
+        <button 
+          type="button" 
+          class="btn btn-secondary me-2" 
+          (click)="onCancel()"
+        >
+          Cancel
+        </button>
+        <button 
+          type="submit" 
+          class="btn btn-primary" 
+          [disabled]="surveyEditionForm.invalid"
+        >
+          Save Survey Edition
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

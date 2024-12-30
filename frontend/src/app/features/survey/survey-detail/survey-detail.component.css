@@ -1,0 +1,62 @@
+/* Survey Detail Styles */
+
+.survey-detail-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.editions-section {
+  margin-top: 20px;
+}
+
+.editions-years {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.edition-year-btn {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 1.1em;
+}
+
+.edition-year-btn:hover {
+  background-color: var(--secondary-color);
+  transform: translateY(-2px);
+}
+
+.edition-year-btn.active {
+  background-color: var(--secondary-color);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.edition-details {
+  margin-top: 20px;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 5px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.loading, .no-editions, .error-message {
+  text-align: center;
+  color: #666;
+  margin: 20px 0;
+}
+
+.error-message {
+  color: red;
+}
+
+h1, h3 {
+  color: var(--text-color);
+  margin-bottom: 15px;
+}

@@ -1,0 +1,88 @@
+<div class="container mt-4">
+  <ng-container *ngIf="loading()">
+    <div class="text-center">
+      <div class="spinner-border" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+  </ng-container>
+
+  <ng-container *ngIf="error()">
+    <div class="alert alert-danger">
+      {{ error() }}
+    </div>
+  </ng-container>
+
+  <ng-container *ngIf="survey()">
+    <div class="card">
+      <div class="card-header">
+        <h2>Edit Survey</h2>
+      </div>
+      
+      <div class="card-body">
+        <form [formGroup]="surveyForm" (ngSubmit)="onSubmit()">
+          <div class="mb-3">
+            <label for="title" class="form-label">Title</label>
+            <input 
+              type="text" 
+              class="form-control" 
+              id="title" 
+              formControlName="title"
+              [ngClass]="{'is-invalid': surveyForm.get('title')?.invalid && surveyForm.get('title')?.touched}"
+            >
+            <div 
+              *ngIf="surveyForm.get('title')?.invalid && surveyForm.get('title')?.touched" 
+              class="invalid-feedback"
+            >
+              <div *ngIf="surveyForm.get('title')?.errors?.['required']">
+                Title is required
+              </div>
+              <div *ngIf="surveyForm.get('title')?.errors?.['minlength']">
+                Title must be at least 3 characters long
+              </div>
+              <div *ngIf="surveyForm.get('title')?.errors?.['maxlength']">
+                Title cannot exceed 100 characters
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="description" class="form-label">Description</label>
+            <textarea 
+              class="form-control" 
+              id="description" 
+              formControlName="description"
+              rows="4"
+              [ngClass]="{'is-invalid': surveyForm.get('description')?.invalid && surveyForm.get('description')?.touched}"
+            ></textarea>
+            <div 
+              *ngIf="surveyForm.get('description')?.invalid && surveyForm.get('description')?.touched" 
+              class="invalid-feedback"
+            >
+              <div *ngIf="surveyForm.get('description')?.errors?.['maxlength']">
+                Description cannot exceed 255 characters
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-end">
+            <button 
+              type="button" 
+              class="btn btn-secondary me-2" 
+              (click)="onCancel()"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              class="btn btn-primary" 
+              [disabled]="surveyForm.invalid"
+            >
+              Update Survey
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </ng-container>
+</div>

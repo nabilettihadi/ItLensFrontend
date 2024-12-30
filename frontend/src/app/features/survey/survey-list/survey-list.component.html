@@ -1,41 +1,118 @@
 <div class="container mt-4">
   <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Surveys</h2>
-    <button class="btn btn-primary" (click)="showForm = true" *ngIf="!showForm">
+    <h2 class="text-dark">My Surveys</h2>
+    <button class="btn btn-primary" (click)="startCreatingNew()" *ngIf="!isCreatingNew">
       Create New Survey
     </button>
   </div>
 
-  <app-survey-form
-    *ngIf="showForm"
-    (save)="onSaveSurvey($event)"
-    (cancel)="showForm = false"
-  ></app-survey-form>
+  <div *ngIf="error()" class="alert alert-danger" role="alert">
+    {{ error() }}
+  </div>
 
-  <div class="row">
-    <div class="col-md-6 col-lg-4 mb-4" *ngFor="let survey of surveys">
-      <div class="card h-100 shadow-sm hover-card">
+  <div *ngIf="loading()" class="text-center">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <!-- Survey Cards -->
+  <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" *ngIf="!loading()">
+    <!-- New Survey Form -->
+    <div class="col" *ngIf="isCreatingNew">
+      <div class="card h-100 shadow-sm">
         <div class="card-body">
-          <h5 class="card-title fw-bold">{{ survey.title }}</h5>
+          <form [formGroup]="newSurveyForm" (ngSubmit)="createNewSurvey()">
+            <div class="mb-3">
+              <label for="title" class="form-label">Title</label>
+              <input type="text" class="form-control" id="title" formControlName="title"
+                [class.is-invalid]="newSurveyForm.get('title')?.errors?.['required'] && newSurveyForm.get('title')?.touched">
+              <div class="invalid-feedback">Title is required</div>
+            </div>
+
+            <div class="mb-3">
+              <label for="description" class="form-label">Description</label>
+              <textarea class="form-control" id="description" formControlName="description" rows="3"></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label for="ownerName" class="form-label">Owner Name</label>
+              <input type="text" class="form-control" id="ownerName" formControlName="ownerName"
+                [class.is-invalid]="newSurveyForm.get('ownerName')?.errors?.['required'] && newSurveyForm.get('ownerName')?.touched">
+              <div class="invalid-feedback">Owner name is required</div>
+            </div>
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-primary" [disabled]="!newSurveyForm.valid || processingOwner()">Create</button>
+              <button type="button" class="btn btn-secondary" (click)="cancelCreatingNew()">Cancel</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Existing Survey Cards -->
+    <div class="col" *ngFor="let survey of surveys(); trackBy: trackBySurveyId">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title text-dark">{{ survey.title }}</h5>
           <p class="card-text text-muted">{{ survey.description }}</p>
-          <div class="mb-3">
-            <i class="bi bi-person-fill"></i>
-            <span class="ms-2">{{ survey.owner.name }}</span>
-          </div>
-          <div *ngIf="survey.editions && survey.editions.length > 0">
-            <strong class="d-block mb-2">Editions:</strong>
-            <div class="editions-container">
-              <div 
-                *ngFor="let edition of survey.editions" 
-                class="edition-badge"
-                (click)="edition.id && navigateToEdition(edition.id)"
-                role="button"
-              >
-                {{ edition.year }}
+          
+          <p class="text-muted mb-2" *ngIf="survey.owner">Created by: {{ survey.owner.name }}</p>
+          
+          <div class="mt-3">
+            <div class="d-flex align-items-center">
+              <span class="me-2">Editions:</span>
+              <div class="d-flex flex-wrap gap-2 me-2">
+                <ng-container *ngIf="getEditionsForSurvey(survey.id) as editions">
+                  <button *ngFor="let edition of editions; trackBy: trackByEditionId" 
+                          class="btn btn-primary"
+                          style="font-size: 0.9rem; padding: 0.25rem 0.75rem;"
+                          [routerLink]="['/surveys', survey.id, 'editions', edition.id]">
+                    {{ edition.year }}
+                  </button>
+                  <span *ngIf="editions.length === 0" class="text-muted small">No editions yet</span>
+                </ng-container>
               </div>
+              <button class="btn btn-outline-primary"
+                      style="font-size: 0.9rem; padding: 0.25rem 0.75rem;"
+                      [routerLink]="['/surveys', survey.id, 'editions', 'new']">
+                New Edition
+              </button>
             </div>
           </div>
+
+          <div class="d-flex gap-2 mt-auto">
+            <button class="btn btn-primary" [routerLink]="['/surveys', survey.id]">View</button>
+            <button class="btn btn-outline-primary" (click)="startEditing(survey)">Edit</button>
+            <button class="btn btn-outline-danger" (click)="confirmDelete(survey)">Delete</button>
+          </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!loading() && surveys().length === 0 && !isCreatingNew" class="text-center py-4">
+    <p class="text-muted">No surveys found.</p>
+    <button class="btn btn-primary" (click)="startCreatingNew()">Create First Survey</button>
+  </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteConfirmModalLabel">Confirm Delete</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Are you sure you want to delete the survey "{{ selectedSurvey?.title }}"? This action cannot be undone.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" (click)="deleteSurvey()">Delete</button>
       </div>
     </div>
   </div>
