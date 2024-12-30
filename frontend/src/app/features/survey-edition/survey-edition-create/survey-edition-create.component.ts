@@ -5,6 +5,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { SurveyEdition } from '../../../core/models/survey-edition.model';
 import { SurveyEditionService } from '../../../core/services/survey-edition.service';
 import { HttpErrorResponse } from '@angular/common/http';
+import { SurveyService } from '../../../core/services/survey.service';
+import { Survey } from '../../../core/models/survey.model';
 
 @Component({
   selector: 'app-survey-edition-create',
@@ -16,6 +18,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 export class SurveyEditionCreateComponent implements OnInit {
   editionForm: FormGroup;
   surveyId: number | null = null;
+  survey: Survey | null = null;
   error: string | null = null;
   loading = false;
 
@@ -23,7 +26,8 @@ export class SurveyEditionCreateComponent implements OnInit {
     private fb: FormBuilder,
     private route: ActivatedRoute,
     private router: Router,
-    private surveyEditionService: SurveyEditionService
+    private surveyEditionService: SurveyEditionService,
+    private surveyService: SurveyService
   ) {
     const currentYear = new Date().getFullYear();
     this.editionForm = this.fb.group({
@@ -38,11 +42,27 @@ export class SurveyEditionCreateComponent implements OnInit {
       const id = params['surveyId'];
       if (id) {
         this.surveyId = +id;
+        this.loadSurveyDetails();
       } else {
         this.error = 'Survey ID not found';
         this.router.navigate(['/surveys']);
       }
     });
+  }
+
+  loadSurveyDetails(): void {
+    if (this.surveyId) {
+      this.surveyService.getById(this.surveyId).subscribe({
+        next: (survey) => {
+          this.survey = survey;
+        },
+        error: (error) => {
+          console.error('Error loading survey details:', error);
+          this.error = 'Failed to load survey details';
+          this.router.navigate(['/surveys']);
+        }
+      });
+    }
   }
 
   onSubmit(): void {

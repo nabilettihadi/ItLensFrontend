@@ -1,75 +1,88 @@
 <div class="container mt-4">
   <div class="row justify-content-center">
     <div class="col-md-8">
-      <div class="card">
-        <div class="card-header">
-          <h2 class="mb-0">Create New Edition</h2>
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h3 class="mb-0">Create New Survey Edition</h3>
         </div>
         <div class="card-body">
+          <!-- Survey Context -->
+          <div *ngIf="survey" class="alert alert-info mb-3">
+            <strong>Survey:</strong> {{ survey.title }}
+            <p class="mb-0">{{ survey.description }}</p>
+          </div>
+
+          <!-- Error Alert -->
+          <div *ngIf="error" class="alert alert-danger">
+            {{ error }}
+          </div>
+
+          <!-- Edition Creation Form -->
           <form [formGroup]="editionForm" (ngSubmit)="onSubmit()">
-            <!-- Error Alert -->
-            <div *ngIf="error" class="alert alert-danger" role="alert">
-              {{ error }}
+            <div class="row g-3">
+              <!-- Year -->
+              <div class="col-md-6">
+                <label for="year" class="form-label">Survey Year</label>
+                <input 
+                  type="number" 
+                  id="year" 
+                  formControlName="year" 
+                  class="form-control"
+                  [ngClass]="{'is-invalid': editionForm.get('year')?.invalid && editionForm.get('year')?.touched}"
+                >
+                <div class="invalid-feedback" *ngIf="editionForm.get('year')?.errors?.['required']">
+                  Year is required
+                </div>
+                <div class="invalid-feedback" *ngIf="editionForm.get('year')?.errors?.['min'] || editionForm.get('year')?.errors?.['max']">
+                  Year must be between 2000 and 2100
+                </div>
+              </div>
+
+              <!-- Start Date -->
+              <div class="col-md-6">
+                <label for="startDate" class="form-label">Start Date</label>
+                <input 
+                  type="date" 
+                  id="startDate" 
+                  formControlName="startDate" 
+                  class="form-control"
+                  [ngClass]="{'is-invalid': editionForm.get('startDate')?.invalid && editionForm.get('startDate')?.touched}"
+                >
+                <div class="invalid-feedback" *ngIf="editionForm.get('startDate')?.errors?.['required']">
+                  Start date is required
+                </div>
+              </div>
+
+              <!-- Creation Date -->
+              <div class="col-md-12">
+                <label for="creationDate" class="form-label">Creation Date</label>
+                <input 
+                  type="date" 
+                  id="creationDate" 
+                  formControlName="creationDate" 
+                  class="form-control"
+                  [ngClass]="{'is-invalid': editionForm.get('creationDate')?.invalid && editionForm.get('creationDate')?.touched}"
+                >
+                <div class="invalid-feedback" *ngIf="editionForm.get('creationDate')?.errors?.['required']">
+                  Creation date is required
+                </div>
+              </div>
             </div>
 
-            <!-- Year -->
-            <div class="mb-3">
-              <label for="year" class="form-label">Year</label>
-              <input type="number"
-                     class="form-control"
-                     id="year"
-                     formControlName="year"
-                     [class.is-invalid]="editionForm.get('year')?.invalid && editionForm.get('year')?.touched">
-              <div class="invalid-feedback" *ngIf="editionForm.get('year')?.errors?.['required']">
-                Year is required
-              </div>
-              <div class="invalid-feedback" *ngIf="editionForm.get('year')?.errors?.['min']">
-                Year must be 2000 or later
-              </div>
-              <div class="invalid-feedback" *ngIf="editionForm.get('year')?.errors?.['max']">
-                Year must be 2100 or earlier
-              </div>
-            </div>
-
-            <!-- Start Date -->
-            <div class="mb-3">
-              <label for="startDate" class="form-label">Start Date</label>
-              <input type="date"
-                     class="form-control"
-                     id="startDate"
-                     formControlName="startDate"
-                     [class.is-invalid]="editionForm.get('startDate')?.invalid && editionForm.get('startDate')?.touched">
-              <div class="invalid-feedback" *ngIf="editionForm.get('startDate')?.errors?.['required']">
-                Start date is required
-              </div>
-            </div>
-
-            <!-- Creation Date -->
-            <div class="mb-3">
-              <label for="creationDate" class="form-label">Creation Date</label>
-              <input type="date"
-                     class="form-control"
-                     id="creationDate"
-                     formControlName="creationDate"
-                     [class.is-invalid]="editionForm.get('creationDate')?.invalid && editionForm.get('creationDate')?.touched">
-              <div class="invalid-feedback" *ngIf="editionForm.get('creationDate')?.errors?.['required']">
-                Creation date is required
-              </div>
-            </div>
-
-            <!-- Buttons -->
-            <div class="d-flex gap-2">
-              <button type="submit"
-                      class="btn btn-primary"
-                      [disabled]="editionForm.invalid || loading">
-                <span *ngIf="loading" class="spinner-border spinner-border-sm me-1" role="status"></span>
-                Create Edition
-              </button>
-              <button type="button"
-                      class="btn btn-outline-secondary"
-                      (click)="cancel()"
-                      [disabled]="loading">
+            <!-- Form Actions -->
+            <div class="d-flex justify-content-between mt-4">
+              <button 
+                type="button" 
+                class="btn btn-secondary" 
+                (click)="cancel()">
                 Cancel
+              </button>
+              <button 
+                type="submit" 
+                class="btn btn-primary" 
+                [disabled]="editionForm.invalid || loading">
+                <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
+                Create Edition
               </button>
             </div>
           </form>

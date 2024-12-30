@@ -1,37 +1,43 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Owner } from '../models/owner.model';
+import { Page } from '../models/page.model';
 import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class OwnerService {
-  private apiUrl = `${environment.apiUrl}/owners`;
+  private apiUrl = `${environment.apiBaseUrl}/owners`;
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {}
 
-  getOwnerByName(name: string): Observable<Owner> {
-    return this.http.get<Owner>(`${this.apiUrl}/name/${name}`);
+  getOwners(page: number = 0, size: number = 10): Observable<Page<Owner>> {
+    const params = new HttpParams()
+      .set('page', page.toString())
+      .set('size', size.toString());
+    
+    return this.http.get<Page<Owner>>(this.apiUrl, { params });
   }
 
-  createOwner(owner: Owner): Observable<Owner> {
+  getById(id: number): Observable<Owner> {
+    return this.http.get<Owner>(`${this.apiUrl}/${id}`);
+  }
+
+  createOwner(owner: Partial<Owner>): Observable<Owner> {
     return this.http.post<Owner>(this.apiUrl, owner);
   }
 
+  updateOwner(id: number, owner: Partial<Owner>): Observable<Owner> {
+    return this.http.put<Owner>(`${this.apiUrl}/${id}`, owner);
+  }
+
+  deleteOwner(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
+
   getOrCreateOwner(name: string): Observable<Owner> {
-    return new Observable(subscriber => {
-      this.getOwnerByName(name).subscribe({
-        next: (owner) => subscriber.next(owner),
-        error: () => {
-          // Si l'owner n'existe pas, on le crée
-          this.createOwner({ name }).subscribe({
-            next: (newOwner) => subscriber.next(newOwner),
-            error: (error) => subscriber.error(error)
-          });
-        }
-      });
-    });
+    return this.http.post<Owner>(`${this.apiUrl}/get-or-create`, { name });
   }
 }
