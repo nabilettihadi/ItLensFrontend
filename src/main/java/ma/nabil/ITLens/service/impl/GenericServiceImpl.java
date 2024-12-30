@@ -19,6 +19,7 @@ public abstract class GenericServiceImpl<E, D, ID> implements GenericService<D, 
     @Transactional
     public D create(D dto) {
         E entity = mapper.toEntity(dto);
+        validateEntity(entity);
         E savedEntity = repository.save(entity);
         return mapper.toDto(savedEntity);
     }
@@ -30,6 +31,7 @@ public abstract class GenericServiceImpl<E, D, ID> implements GenericService<D, 
             throw new ResourceNotFoundException(getEntityName(), id);
         }
         E entity = mapper.toEntity(dto);
+        validateEntity(entity);
         setEntityId(entity, id);
         E updatedEntity = repository.save(entity);
         return mapper.toDto(updatedEntity);
@@ -61,4 +63,8 @@ public abstract class GenericServiceImpl<E, D, ID> implements GenericService<D, 
     protected abstract String getEntityName();
 
     protected abstract void setEntityId(E entity, ID id);
+
+    protected void validateEntity(E entity) {
+        // Default no-op implementation
+    }
 }

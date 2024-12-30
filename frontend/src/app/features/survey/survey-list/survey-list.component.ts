@@ -2,9 +2,11 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 
 import { Survey } from '../../../core/models/survey.model';
 import { Owner } from '../../../core/models/owner.model';
+import { SurveyEdition } from '../../../core/models/survey-edition.model';
 import { SurveyService } from '../../../core/services/survey.service';
 import { OwnerService } from '../../../core/services/owner.service';
 
@@ -27,13 +29,16 @@ export class SurveyListComponent implements OnInit {
   processingOwner = signal(false);
   selectedSurvey: Survey | null = null;
 
+  surveyEditions: { [surveyId: number]: SurveyEdition[] } = {};
+
   newSurveyForm: FormGroup;
   editSurveyForms: { [key: number]: FormGroup } = {};
 
   constructor(
     private surveyService: SurveyService,
     private ownerService: OwnerService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private router: Router
   ) {
     this.newSurveyForm = this.fb.group({
       title: ['', [Validators.required, Validators.minLength(3)]],
@@ -50,17 +55,15 @@ export class SurveyListComponent implements OnInit {
   loadSurveys(): void {
     this.loading.set(true);
     this.surveyService.getSurveys().subscribe({
-      next: (surveysPage) => {
-        this.surveys.set(surveysPage.content);
+      next: (page) => {
+        // Filter out surveys without an id
+        const validSurveys = page.content.filter(survey => survey.id !== undefined);
+        this.surveys.set(validSurveys);
         
-        // Prepare edit forms for each survey
-        surveysPage.content.forEach(survey => {
-          if (survey && survey.id !== undefined) {
-            this.editSurveyForms[survey.id] = this.fb.group({
-              title: [survey.title ?? '', [Validators.required, Validators.minLength(3)]],
-              description: [survey.description ?? '', [Validators.required, Validators.minLength(10)]],
-              owner: [survey.owner?.id ?? null, Validators.required]
-            });
+        // Load editions for each survey with a valid id
+        validSurveys.forEach(survey => {
+          if (survey.id) {
+            this.loadSurveyEditions(survey.id);
           }
         });
         
@@ -69,7 +72,19 @@ export class SurveyListComponent implements OnInit {
       error: (err) => {
         this.error.set('Failed to load surveys');
         this.loading.set(false);
-        console.error(err);
+      }
+    });
+  }
+
+  loadSurveyEditions(surveyId: number): void {
+    this.surveyService.getSurveyEditionsBySurveyId(surveyId).subscribe({
+      next: (editions) => {
+        // Sort editions by year in descending order
+        this.surveyEditions[surveyId] = editions.sort((a, b) => b.year - a.year);
+      },
+      error: (err) => {
+        console.error(`Failed to load editions for survey ${surveyId}`, err);
+        this.surveyEditions[surveyId] = [];
       }
     });
   }
@@ -136,7 +151,14 @@ export class SurveyListComponent implements OnInit {
   getEditionsForSurvey(surveyId: number | undefined): any[] {
     if (!surveyId) return [];
     const survey = this.surveys().find(s => s.id === surveyId);
-    return survey?.editions ?? [];
+    if (!survey) return [];
+
+    // Ajout de vérifications robustes
+    if (!survey.editions || !Array.isArray(survey.editions)) {
+      return [];
+    }
+
+    return survey.editions.filter(edition => edition && edition.year) || [];
   }
 
   trackBySurveyId(index: number, survey: Survey): number {
@@ -144,7 +166,11 @@ export class SurveyListComponent implements OnInit {
   }
 
   trackByEditionId(index: number, edition: any): number {
-    return edition.id ?? index;
+    // Ajout de vérifications robustes
+    if (!edition || !edition.id && !edition.year) {
+      return index;
+    }
+    return edition.id ?? edition.year ?? index;
   }
 
   startCreatingNew(): void {
@@ -205,5 +231,19 @@ export class SurveyListComponent implements OnInit {
 
   confirmDelete(survey: Survey): void {
     this.selectedSurvey = survey;
+  }
+
+  navigateToSurveyEdition(edition: SurveyEdition): void {
+    if (edition && edition.id) {
+      // Navigate to survey edition detail view
+      this.router.navigate(['/survey-editions', edition.id]);
+    }
+  }
+
+  navigateToNewSurveyEdition(surveyId?: number): void {
+    if (surveyId) {
+      // Navigate to create new survey edition for this survey
+      this.router.navigate(['/survey', surveyId, 'editions', 'new']);
+    }
   }
 }

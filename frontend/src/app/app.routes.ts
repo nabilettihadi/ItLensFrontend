@@ -23,12 +23,16 @@ export const routes: Routes = [
   },
   // Survey Edition Routes
   { 
-    path: 'surveys/:surveyId/editions/new', 
-    component: SurveyEditionCreateComponent 
-  },
-  { 
     path: 'surveys/:surveyId/editions/:editionId', 
     component: SurveyEditionDetailComponent 
+  },
+  { 
+    path: 'surveys/:surveyId/editions/:year/details', 
+    component: SurveyEditionDetailComponent 
+  },
+  { 
+    path: 'surveys/:surveyId/editions/new', 
+    component: SurveyEditionCreateComponent 
   },
   { path: '**', redirectTo: 'surveys' }
 ];

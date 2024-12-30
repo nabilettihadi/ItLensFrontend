@@ -1,86 +1,66 @@
 <div class="container mt-4">
   <div *ngIf="loading()" class="text-center">
-    <div class="spinner-border text-primary" role="status">
+    <div class="spinner-border" role="status">
       <span class="visually-hidden">Loading...</span>
     </div>
   </div>
 
-  <div *ngIf="error()" class="alert alert-danger" role="alert">
+  <div *ngIf="error()" class="alert alert-danger">
     {{ error() }}
   </div>
 
   <ng-container *ngIf="edition()">
     <div class="card">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-start mb-4">
-          <h1 class="card-title">Edition {{ edition()?.year }}</h1>
-          <button class="btn btn-outline-danger" (click)="deleteEdition()">
-            <i class="bi bi-trash"></i> Delete Edition
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h2>Survey Edition Details</h2>
+        <div class="btn-group">
+          <button class="btn btn-sm btn-outline-primary" (click)="editEdition()">
+            <i class="bi bi-pencil"></i> Edit
           </button>
-        </div>
-
-        <div class="edition-details mb-4">
-          <div class="row">
-            <div class="col-md-6">
-              <p class="mb-2">
-                <strong>Created:</strong>
-                <span>{{ edition()?.creationDate | date:'mediumDate' }}</span>
-              </p>
-            </div>
-            <div class="col-md-6">
-              <p class="mb-2">
-                <strong>Start Date:</strong>
-                <span>{{ edition()?.startDate | date:'mediumDate' }}</span>
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div class="subjects-section" *ngIf="edition()?.subjects?.length">
-          <h3>Subjects</h3>
-          <div class="subjects-list">
-            <ul class="list-unstyled">
-              <li *ngFor="let subject of edition()?.subjects" class="mb-2">
-                <div class="card">
-                  <div class="card-body">
-                    <h5 class="card-title">{{ subject.title }}</h5>
-                    <p class="card-text">
-                      <ng-container *ngIf="subject.questions">
-                        <span *ngIf="subject.questions.length > 0">
-                          {{ subject.questions.length }} questions
-                        </span>
-                        <span *ngIf="subject.questions.length === 0">No questions</span>
-                      </ng-container>
-                      <span *ngIf="!subject.questions">No questions</span>
-                    </p>
-                    <div class="d-flex gap-2">
-                      <button class="btn btn-primary btn-sm" [routerLink]="['/subjects', subject.id]">
-                        <i class="bi bi-eye"></i> View Details
-                      </button>
-                      <button class="btn btn-outline-primary btn-sm" [routerLink]="['/subjects', subject.id, 'edit']">
-                        <i class="bi bi-pencil"></i> Edit
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        <div *ngIf="!edition()?.subjects?.length" class="no-subjects text-center py-4">
-          <p class="text-muted">No subjects have been added to this edition yet.</p>
-          <button class="btn btn-primary" [routerLink]="['/surveys', edition()?.surveyId, 'editions', edition()?.id, 'subjects', 'new']">
-            Add Subject
+          <button class="btn btn-sm btn-outline-danger" (click)="deleteEdition()">
+            <i class="bi bi-trash"></i> Delete
           </button>
         </div>
       </div>
-    </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <h4>Basic Information</h4>
+            <p><strong>Year:</strong> {{ edition()?.year }}</p>
+            <p><strong>Creation Date:</strong> {{ edition()?.creationDate | date }}</p>
+            <p><strong>Start Date:</strong> {{ edition()?.startDate | date }}</p>
+          </div>
+          <div class="col-md-6">
+            <h4>Survey Information</h4>
+            <p><strong>Survey Title:</strong> {{ survey()?.title }}</p>
+            <p><strong>Survey Description:</strong> {{ survey()?.description }}</p>
+          </div>
+        </div>
 
-    <div class="mt-3">
-      <button class="btn btn-secondary" [routerLink]="['/surveys', edition()?.surveyId]">
-        <i class="bi bi-arrow-left"></i> Back to Survey
-      </button>
+        <div class="mt-4">
+          <h4>Subjects</h4>
+          <table *ngIf="edition()?.subjects?.length" class="table table-striped">
+            <thead>
+              <tr>
+                <th>Subject Name</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let subject of edition()?.subjects">
+                <td>{{ subject.title }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <p *ngIf="!edition()?.subjects?.length" class="text-muted">
+            No subjects found for this survey edition.
+          </p>
+        </div>
+      </div>
+      <div class="card-footer">
+        <button class="btn btn-secondary" (click)="goBack()">
+          <i class="bi bi-arrow-left"></i> Back to Survey
+        </button>
+      </div>
     </div>
   </ng-container>
 </div>

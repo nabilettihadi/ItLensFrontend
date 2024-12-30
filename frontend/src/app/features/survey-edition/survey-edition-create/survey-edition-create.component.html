@@ -2,8 +2,16 @@
   <div class="row justify-content-center">
     <div class="col-md-8">
       <div class="card shadow-sm">
-        <div class="card-header bg-primary text-white">
-          <h3 class="mb-0">Create New Survey Edition</h3>
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+          <h3 class="mb-0">
+            {{ isEditMode ? 'Edit Survey Edition' : 'Create New Survey Edition' }}
+          </h3>
+          <button 
+            *ngIf="survey" 
+            class="btn btn-light btn-sm" 
+            (click)="navigateToSurveyEditionDetails()">
+            <i class="bi bi-arrow-left"></i> Back to Editions
+          </button>
         </div>
         <div class="card-body">
           <!-- Survey Context -->
@@ -29,6 +37,7 @@
                   formControlName="year" 
                   class="form-control"
                   [ngClass]="{'is-invalid': editionForm.get('year')?.invalid && editionForm.get('year')?.touched}"
+                  (change)="onYearClick($event)"
                 >
                 <div class="invalid-feedback" *ngIf="editionForm.get('year')?.errors?.['required']">
                   Year is required
@@ -49,7 +58,7 @@
                   [ngClass]="{'is-invalid': editionForm.get('startDate')?.invalid && editionForm.get('startDate')?.touched}"
                 >
                 <div class="invalid-feedback" *ngIf="editionForm.get('startDate')?.errors?.['required']">
-                  Start date is required
+                  Start Date is required
                 </div>
               </div>
 
@@ -64,25 +73,25 @@
                   [ngClass]="{'is-invalid': editionForm.get('creationDate')?.invalid && editionForm.get('creationDate')?.touched}"
                 >
                 <div class="invalid-feedback" *ngIf="editionForm.get('creationDate')?.errors?.['required']">
-                  Creation date is required
+                  Creation Date is required
                 </div>
               </div>
             </div>
 
             <!-- Form Actions -->
-            <div class="d-flex justify-content-between mt-4">
+            <div class="mt-4 d-flex justify-content-between">
               <button 
                 type="button" 
                 class="btn btn-secondary" 
-                (click)="cancel()">
+                (click)="navigateToSurveyEditionDetails()">
                 Cancel
               </button>
               <button 
                 type="submit" 
                 class="btn btn-primary" 
-                [disabled]="editionForm.invalid || loading">
-                <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
-                Create Edition
+                [disabled]="loading || editionForm.invalid">
+                {{ isEditMode ? 'Update Edition' : 'Create Edition' }}
+                <span *ngIf="loading" class="spinner-border spinner-border-sm ml-2"></span>
               </button>
             </div>
           </form>

@@ -31,6 +31,12 @@ public class SurveyServiceImpl extends GenericServiceImpl<Survey, SurveyDTO, Int
     }
 
     @Override
+    public Page<SurveyDTO> getAll(Pageable pageable) {
+        return surveyRepository.findAllWithEditions(pageable)
+                .map(mapper::toDto);
+    }
+
+    @Override
     public Page<SurveyDTO> getSurveysByOwnerId(Integer ownerId, Pageable pageable) {
         if (!ownerRepository.existsById(ownerId)) {
             throw new ResourceNotFoundException("Owner", ownerId);
@@ -50,23 +56,12 @@ public class SurveyServiceImpl extends GenericServiceImpl<Survey, SurveyDTO, Int
     }
 
     @Override
-    public SurveyDTO create(SurveyDTO dto) {
-        validateOwner(dto);
-        return super.create(dto);
-    }
-
-    @Override
-    public SurveyDTO update(Integer id, SurveyDTO dto) {
-        validateOwner(dto);
-        return super.update(id, dto);
-    }
-
-    private void validateOwner(SurveyDTO dto) {
-        if (dto.getOwner() == null || dto.getOwner().getId() == null) {
+    protected void validateEntity(Survey entity) {
+        if (entity.getOwner() == null || entity.getOwner().getId() == null) {
             throw new ValidationException("Owner is required");
         }
-        if (!ownerRepository.existsById(dto.getOwner().getId())) {
-            throw new ResourceNotFoundException("Owner", dto.getOwner().getId());
+        if (!ownerRepository.existsById(entity.getOwner().getId())) {
+            throw new ResourceNotFoundException("Owner", entity.getOwner().getId());
         }
     }
 }

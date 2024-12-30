@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Survey } from '../models/survey.model';
 import { Page } from '../models/page.model';
+import { SurveyEdition } from '../models/survey-edition.model';
 import { environment } from '../../../environments/environment';
 
 @Injectable({
@@ -25,6 +26,10 @@ export class SurveyService {
     return this.http.get<Survey>(`${this.apiUrl}/${id}`);
   }
 
+  getById(id: number): Observable<Survey> {
+    return this.getSurveyById(id);
+  }
+
   createSurvey(survey: Partial<Survey>): Observable<Survey> {
     return this.http.post<Survey>(this.apiUrl, survey);
   }
@@ -35,5 +40,9 @@ export class SurveyService {
 
   deleteSurvey(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
+
+  getSurveyEditionsBySurveyId(surveyId: number): Observable<SurveyEdition[]> {
+    return this.http.get<SurveyEdition[]>(`${this.apiUrl}/${surveyId}/editions`);
   }
 }

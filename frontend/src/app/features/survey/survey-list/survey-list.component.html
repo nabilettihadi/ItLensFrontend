@@ -54,7 +54,7 @@
           <!-- Owner Information -->
           <div class="mb-2">
             <strong>Owner:</strong> 
-            {{ survey.owner?.name || 'No Owner' }}
+            {{ survey.owner && survey.owner.name ? survey.owner.name : 'No Owner' }}
           </div>
 
           <!-- Survey Editions Section -->
@@ -63,22 +63,28 @@
               <span class="me-2 fw-bold">Editions:</span>
               <div class="d-flex flex-wrap gap-2 me-2">
                 <ng-container *ngIf="getEditionsForSurvey(survey.id) as editions">
-                  <a 
-                    *ngFor="let edition of editions; trackBy: trackByEditionId" 
-                    class="btn btn-sm btn-outline-primary"
-                    [routerLink]="['/surveys', survey.id, 'editions', edition.id]">
-                    {{ edition.year }}
-                  </a>
-                  <span *ngIf="editions.length === 0" class="text-muted small">No editions</span>
+                  <div class="btn-group" role="group" aria-label="Survey Editions">
+                    <ng-container *ngIf="survey.id && editions.length > 0; else noEditions">
+                      <button 
+                        *ngFor="let edition of editions" 
+                        class="btn btn-sm btn-outline-primary me-1"
+                        (click)="navigateToSurveyEdition(edition)">
+                        {{ edition.year }}
+                      </button>
+                    </ng-container>
+                    <ng-template #noEditions>
+                      <span class="text-muted">No editions</span>
+                    </ng-template>
+                    
+                    <button 
+                      *ngIf="survey.id"
+                      class="btn btn-sm btn-success" 
+                      (click)="navigateToNewSurveyEdition(survey.id)">
+                      <i class="bi bi-plus"></i> New Edition
+                    </button>
+                  </div>
                 </ng-container>
               </div>
-              
-              <!-- New Edition Button -->
-              <a 
-                class="btn btn-sm btn-outline-success" 
-                [routerLink]="['/surveys', survey.id, 'editions', 'new']">
-                <i class="bi bi-plus"></i> New Edition
-              </a>
             </div>
           </div>
 
