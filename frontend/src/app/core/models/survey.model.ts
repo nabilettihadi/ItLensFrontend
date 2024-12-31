@@ -5,6 +5,6 @@ export interface Survey {
     id?: number;
     title: string;
     description?: string;
-    owner: Owner;
+    owner?: Owner;
     editions?: SurveyEdition[];
 }

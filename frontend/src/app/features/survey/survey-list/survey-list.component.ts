@@ -1,19 +1,23 @@
 import { Component, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { of, switchMap, map, filter, catchError } from 'rxjs';
 
 import { Survey } from '../../../core/models/survey.model';
 import { Owner } from '../../../core/models/owner.model';
 import { SurveyEdition } from '../../../core/models/survey-edition.model';
 import { SurveyService } from '../../../core/services/survey.service';
 import { OwnerService } from '../../../core/services/owner.service';
+import { SurveyEditionService } from '../../../core/services/survey-edition.service';
+
+import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
+import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-survey-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, FormsModule],
   templateUrl: './survey-list.component.html',
   styleUrls: ['./survey-list.component.css']
 })
@@ -34,6 +38,48 @@ export class SurveyListComponent implements OnInit {
   newSurveyForm: FormGroup;
   editSurveyForms: { [key: number]: FormGroup } = {};
 
+  private _draftSurvey: Survey | null = null;
+
+  get draftSurvey(): Survey | null {
+    return this._draftSurvey;
+  }
+
+  get draftSurveyTitle(): string {
+    return this._draftSurvey?.title || '';
+  }
+
+  set draftSurveyTitle(value: string) {
+    if (this._draftSurvey) {
+      this._draftSurvey.title = value;
+    }
+  }
+
+  get draftSurveyDescription(): string {
+    return this._draftSurvey?.description || '';
+  }
+
+  set draftSurveyDescription(value: string) {
+    if (this._draftSurvey) {
+      this._draftSurvey.description = value;
+    }
+  }
+
+  get draftSurveyOwnerName(): string {
+    return this._draftSurvey?.owner?.name || '';
+  }
+
+  set draftSurveyOwnerName(value: string) {
+    if (this._draftSurvey) {
+      if (!this._draftSurvey.owner) {
+        this._draftSurvey.owner = { name: value };
+      } else {
+        this._draftSurvey.owner.name = value;
+      }
+    }
+  }
+
+  creationError: string | null = null;
+
   constructor(
     private surveyService: SurveyService,
     private ownerService: OwnerService,
@@ -41,9 +87,9 @@ export class SurveyListComponent implements OnInit {
     private router: Router
   ) {
     this.newSurveyForm = this.fb.group({
-      title: ['', [Validators.required, Validators.minLength(3)]],
-      description: ['', [Validators.required, Validators.minLength(10)]],
-      owner: [null, Validators.required]
+      title: [''],
+      description: [''],
+      owner: [null]
     });
   }
 
@@ -131,7 +177,7 @@ export class SurveyListComponent implements OnInit {
       this.processingOwner.set(true);
       this.surveyService.updateSurvey(surveyId, updatedSurvey).subscribe({
         next: (updated) => {
-          // Update the survey in the list
+          // Mettre à jour le sondage dans la liste
           const updatedSurveys = this.surveys().map(s => 
             s.id === surveyId ? { ...s, ...updated } : s
           );
@@ -140,8 +186,8 @@ export class SurveyListComponent implements OnInit {
           this.processingOwner.set(false);
         },
         error: (err) => {
-          console.error('Failed to update survey', err);
-          this.error.set('Failed to update survey');
+          console.error('Échec de la mise à jour du sondage', err);
+          this.error.set('Échec de la mise à jour du sondage');
           this.processingOwner.set(false);
         }
       });
@@ -174,63 +220,131 @@ export class SurveyListComponent implements OnInit {
   }
 
   startCreatingNew(): void {
+    // If already creating a survey, do nothing
+    if (this.isCreatingNew) {
+      return;
+    }
+
+    // Create a new draft survey with safe initialization
+    this._draftSurvey = {
+      title: '',
+      description: '',
+      owner: { name: '' }
+    };
     this.isCreatingNew = true;
+    this.creationError = null;
   }
 
   cancelCreatingNew(): void {
     this.isCreatingNew = false;
+    this._draftSurvey = null;
+    this.creationError = null;
   }
 
   createNewSurvey(): void {
-    if (this.newSurveyForm.valid) {
-      const selectedOwner = this.owners().find(o => o.id === this.newSurveyForm.get('owner')?.value);
-      
-      const newSurvey: Survey = {
-        title: this.newSurveyForm.get('title')?.value ?? '',
-        description: this.newSurveyForm.get('description')?.value ?? '',
-        owner: {
-          id: selectedOwner?.id ?? 0,
-          name: selectedOwner?.name ?? ''
-        }
-      };
+    // Validate draft survey
+    if (!this._draftSurvey) {
+      this.creationError = 'No draft survey found';
+      return;
+    }
 
-      this.processingOwner.set(true);
-      this.surveyService.createSurvey(newSurvey).subscribe({
-        next: (createdSurvey) => {
-          this.surveys.update(surveys => [...surveys, createdSurvey]);
-          this.isCreatingNew = false;
-          this.newSurveyForm.reset();
-          this.processingOwner.set(false);
-        },
-        error: (err) => {
-          console.error('Failed to create survey', err);
-          this.error.set('Failed to create survey');
-          this.processingOwner.set(false);
-        }
-      });
+    // Validate title
+    const title = this._draftSurvey.title?.trim() || '';
+    if (title.length < 3) {
+      this.creationError = 'Title must be at least 3 characters long';
+      return;
+    }
+
+    // Validate description
+    const description = this._draftSurvey.description?.trim() || '';
+    if (description.length < 10) {
+      this.creationError = 'Description must be at least 10 characters long';
+      return;
+    }
+
+    // Validate owner
+    const ownerName = this._draftSurvey.owner?.name?.trim() || '';
+    if (ownerName.length === 0) {
+      this.creationError = 'Owner name is required';
+      return;
+    }
+
+    // Create owner first
+    this.ownerService.createOwner({ name: ownerName }).pipe(
+      switchMap(owner => {
+        // Prepare survey for creation with full owner object
+        const surveyToCreate: Survey = {
+          title: title,
+          description: description,
+          owner: owner
+        };
+
+        // Create survey
+        return this.surveyService.createSurvey(surveyToCreate);
+      })
+    ).subscribe({
+      next: (createdSurvey) => {
+        // Add to surveys list
+        this.surveys.update(surveys => [...surveys, createdSurvey]);
+        
+        // Reset creation state
+        this.isCreatingNew = false;
+        this._draftSurvey = null;
+        this.creationError = null;
+      },
+      error: (err) => {
+        // Handle creation error
+        this.creationError = 'Failed to create survey. Please try again.';
+        console.error('Survey creation error', err);
+      }
+    });
+  }
+
+  confirmDelete(survey: Survey): void {
+    if (!survey.id) {
+      console.error('Cannot delete survey without an ID');
+      return;
+    }
+
+    // Assuming you have a modal for confirmation
+    this.selectedSurvey = survey;
+    // Trigger modal open (you might need to use ViewChild or a service to control modal)
+    const deleteModal = document.getElementById('deleteConfirmModal');
+    if (deleteModal) {
+      // @ts-ignore
+      new bootstrap.Modal(deleteModal).show();
     }
   }
 
   deleteSurvey(): void {
-    if (this.selectedSurvey && this.selectedSurvey.id) {
-      this.processingOwner.set(true);
-      this.surveyService.deleteSurvey(this.selectedSurvey.id).subscribe({
-        next: () => {
-          this.surveys.update(surveys => surveys.filter(s => s.id !== this.selectedSurvey?.id));
-          this.processingOwner.set(false);
-          this.selectedSurvey = null;
-        },
-        error: (err) => {
-          console.error('Failed to delete survey', err);
-          this.error.set('Failed to delete survey');
-          this.processingOwner.set(false);
-        }
-      });
+    if (!this.selectedSurvey || !this.selectedSurvey.id) {
+      this.error.set('No survey selected for deletion');
+      return;
     }
-  }
 
-  confirmDelete(survey: Survey): void {
-    this.selectedSurvey = survey;
+    this.processingOwner.set(true);
+    this.surveyService.deleteSurvey(this.selectedSurvey.id).subscribe({
+      next: () => {
+        // Remove the deleted survey from the list
+        this.surveys.update(surveys => 
+          surveys.filter(s => s.id !== this.selectedSurvey!.id)
+        );
+        this.selectedSurvey = null;
+        this.processingOwner.set(false);
+        
+        // Close the modal
+        const deleteModal = document.getElementById('deleteConfirmModal');
+        if (deleteModal) {
+          // @ts-ignore
+          bootstrap.Modal.getInstance(deleteModal)?.hide();
+        }
+      },
+      error: (err) => {
+        console.error('Échec de la suppression du sondage', err);
+        this.error.set('Échec de la suppression du sondage');
+        this.processingOwner.set(false);
+      }
+    });
   }
 
   navigateToSurveyEdition(edition: SurveyEdition): void {
@@ -243,7 +357,7 @@ export class SurveyListComponent implements OnInit {
   navigateToNewSurveyEdition(surveyId?: number): void {
     if (surveyId) {
       // Navigate to create new survey edition for this survey
-      this.router.navigate(['/survey', surveyId, 'editions', 'new']);
+      this.router.navigate(['/surveys', surveyId, 'editions', 'new']);
     }
   }
 }
