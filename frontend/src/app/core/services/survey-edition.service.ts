@@ -9,7 +9,7 @@ import { environment } from '../../../environments/environment';
   providedIn: 'root'
 })
 export class SurveyEditionService {
-  private apiUrl = `${environment.apiUrl}/api/editions`;
+  private apiUrl = `${environment.apiBaseUrl}/editions`;
 
   constructor(private http: HttpClient) {}
 
@@ -29,7 +29,7 @@ export class SurveyEditionService {
 
   // Create Survey Edition with enhanced error handling
   createSurveyEdition(surveyEdition: SurveyEdition): Observable<SurveyEdition> {
-    return this.http.post<SurveyEdition>(`${this.apiUrl}`, surveyEdition)
+    return this.http.post<SurveyEdition>(this.apiUrl, surveyEdition)
       .pipe(
         catchError(this.handleError)
       );
@@ -42,10 +42,8 @@ export class SurveyEditionService {
 
   // Get Survey Editions by Survey ID with enhanced error handling
   getSurveyEditionsBySurveyId(surveyId: number): Observable<SurveyEdition[]> {
-    return this.http.get<SurveyEdition[]>(`${environment.apiUrl}/api/surveys/${surveyId}/editions`)
-      .pipe(
-        catchError(this.handleError)
-      );
+    return this.http.get<SurveyEdition[]>(`${environment.apiBaseUrl}/survey-editions/survey/${surveyId}`)
+      .pipe(catchError(this.handleError));
   }
 
   // Get Survey Edition by ID with enhanced error handling
@@ -122,7 +120,7 @@ export class SurveyEditionService {
     size: number = 10, 
     sortBy: string = 'year'
   ): Observable<any> {
-    return this.http.get(`${environment.apiUrl}/api/surveys/${surveyId}/editions/paginated`, {
+    return this.http.get(`${this.apiUrl}/survey/${surveyId}/paginated`, {
       params: {
         page: page.toString(),
         size: size.toString(),

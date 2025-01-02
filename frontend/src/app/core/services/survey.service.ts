@@ -2,9 +2,10 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Survey } from '../models/survey.model';
-import { Page } from '../models/page.model';
 import { SurveyEdition } from '../models/survey-edition.model';
+import { Page } from '../models/page.model';
 import { environment } from '../../../environments/environment';
+import { SurveyEditionService } from './survey-edition.service';
 
 @Injectable({
   providedIn: 'root'
@@ -12,7 +13,10 @@ import { environment } from '../../../environments/environment';
 export class SurveyService {
   private apiUrl = `${environment.apiBaseUrl}/surveys`;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private surveyEditionService: SurveyEditionService
+  ) {}
 
   getSurveys(page: number = 0, size: number = 10): Observable<Page<Survey>> {
     const params = new HttpParams()
@@ -43,6 +47,6 @@ export class SurveyService {
   }
 
   getSurveyEditionsBySurveyId(surveyId: number): Observable<SurveyEdition[]> {
-    return this.http.get<SurveyEdition[]>(`${this.apiUrl}/${surveyId}/editions`);
+    return this.surveyEditionService.getSurveyEditionsBySurveyId(surveyId);
   }
 }
