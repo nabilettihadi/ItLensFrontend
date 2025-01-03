@@ -42,50 +42,58 @@ export class SurveyEditionDetailComponent implements OnInit {
 
   loadEditionByYearAndSurveyId(surveyId: number, year: number): void {
     this.loading.set(true);
-    this.surveyEditionService.getSurveyEditionByYearAndSurveyId(surveyId, year).subscribe({
-      next: (edition) => {
-        this.edition.set(edition);
-        this.surveyService.getSurveyById(surveyId).subscribe({
-          next: (survey) => {
-            this.survey.set(survey);
-            this.loading.set(false);
-          },
-          error: (error) => {
-            this.error.set('Failed to load survey details');
-            this.loading.set(false);
-            console.error(error);
-          }
-        });
+    this.surveyEditionService.getEditionsBySurveyId(surveyId).subscribe({
+      next: (editions: SurveyEdition[]) => {
+        const edition = editions.find((e: SurveyEdition) => e.year === year);
+        if (edition) {
+          this.edition.set(edition);
+          this.surveyService.getSurveyById(surveyId).subscribe({
+            next: (survey: Survey) => {
+              this.survey.set(survey);
+              this.loading.set(false);
+            },
+            error: (err: Error) => {
+              this.error.set('Failed to load survey details');
+              this.loading.set(false);
+              console.error(err);
+            }
+          });
+        } else {
+          this.error.set('Edition not found');
+          this.loading.set(false);
+        }
       },
-      error: (error) => {
-        this.error.set(`Failed to load survey edition for year ${year}`);
+      error: (err: Error) => {
+        this.error.set('Failed to load edition details');
         this.loading.set(false);
-        console.error(error);
+        console.error(err);
       }
     });
   }
 
   loadEdition(editionId: number): void {
     this.loading.set(true);
-    this.surveyEditionService.getSurveyEditionById(editionId).subscribe({
+    this.surveyEditionService.getEditionById(editionId).subscribe({
       next: (edition: SurveyEdition) => {
         this.edition.set(edition);
-        // Charger les informations du survey
-        this.surveyService.getSurveyById(edition.surveyId).subscribe({
-          next: (survey) => {
-            this.survey.set(survey);
-          },
-          error: (error) => {
-            console.error('Failed to load survey', error);
-          }
-        });
-        this.loading.set(false);
-      },
-      error: (error: unknown) => {
-        this.loading.set(false);
-        if (error instanceof HttpErrorResponse) {
-          this.error.set(error.error?.message || 'Failed to load survey edition');
+        if (edition.surveyId) {
+          this.surveyService.getSurveyById(edition.surveyId).subscribe({
+            next: (survey) => {
+              this.survey.set(survey);
+              this.loading.set(false);
+            },
+            error: (err: Error) => {
+              this.error.set('Failed to load survey details');
+              this.loading.set(false);
+              console.error(err);
+            }
+          });
         }
+      },
+      error: (err: Error) => {
+        this.error.set('Failed to load edition details');
+        this.loading.set(false);
+        console.error(err);
       }
     });
   }
@@ -113,17 +121,21 @@ export class SurveyEditionDetailComponent implements OnInit {
   }
 
   deleteEdition(): void {
-    const currentEdition = this.edition();
-    if (currentEdition && currentEdition.id) {
-      this.surveyEditionService.deleteSurveyEdition(currentEdition.id).subscribe({
-        next: () => {
-          this.router.navigate(['/surveys', currentEdition.surveyId]);
-        },
-        error: (error) => {
-          this.error.set('Failed to delete survey edition');
-          console.error(error);
-        }
-      });
+    if (this.edition()) {
+      if (confirm('Are you sure you want to delete this edition?')) {
+        this.loading.set(true);
+        this.surveyEditionService.deleteEdition(this.edition()!.id!).subscribe({
+          next: () => {
+            this.loading.set(false);
+            this.router.navigate(['/surveys', this.survey()?.id]);
+          },
+          error: (err: Error) => {
+            this.error.set('Failed to delete edition');
+            this.loading.set(false);
+            console.error(err);
+          }
+        });
+      }
     }
   }
 }

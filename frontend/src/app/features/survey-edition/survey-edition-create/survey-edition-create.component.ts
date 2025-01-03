@@ -7,6 +7,8 @@ import { SurveyEditionService } from '../../../core/services/survey-edition.serv
 import { HttpErrorResponse } from '@angular/common/http';
 import { SurveyService } from '../../../core/services/survey.service';
 import { Survey } from '../../../core/models/survey.model';
+import { Page } from '../../../core/models/page.model';
+import { SurveyReference } from '../../../core/models/survey-reference.model';
 
 @Component({
   selector: 'app-survey-edition-create',
@@ -17,7 +19,7 @@ import { Survey } from '../../../core/models/survey.model';
 })
 export class SurveyEditionCreateComponent implements OnInit {
   editionForm!: FormGroup;
-  surveyId: number | null = null;
+  surveyId: number = 0;
   survey: Survey | null = null;
   surveyEdition: SurveyEdition | null = null;
   error: string | null = null;
@@ -41,7 +43,17 @@ export class SurveyEditionCreateComponent implements OnInit {
     this.editionForm = this.fb.group({
       year: [currentYear, [Validators.required, Validators.min(2000), Validators.max(2100)]],
       startDate: [new Date().toISOString().split('T')[0], Validators.required],
-      creationDate: [new Date().toISOString().split('T')[0], Validators.required]
+      creationDate: [new Date().toISOString().split('T')[0], Validators.required],
+      status: ['DRAFT']
+    });
+
+    // Subscribe to year changes to check for duplicates
+    this.editionForm.get('year')?.valueChanges.subscribe(year => {
+      if (this.availableYears.includes(year)) {
+        this.error = `Warning: An edition for year ${year} already exists.`;
+      } else {
+        this.error = null;
+      }
     });
   }
 
@@ -50,69 +62,128 @@ export class SurveyEditionCreateComponent implements OnInit {
       const surveyId = params['surveyId'];
       const editionId = params['editionId'];
 
-      if (surveyId) {
+      // Validate surveyId is a valid number
+      if (surveyId && !isNaN(Number(surveyId))) {
         this.surveyId = +surveyId;
         this.loadSurveyDetails();
         this.loadAvailableYears();
 
-        // Check if we're in edit mode
         if (editionId) {
           this.isEditMode = true;
           this.loadSurveyEditionDetails(+editionId);
         }
       } else {
-        this.error = 'Survey ID not found';
+        this.error = 'Invalid survey ID';
         this.router.navigate(['/surveys']);
       }
     });
   }
 
   loadSurveyDetails() {
-    if (this.surveyId) {
-      this.surveyService.getSurveyById(this.surveyId).subscribe({
-        next: (survey) => {
-          this.survey = survey;
-        },
-        error: (err) => {
-          this.error = 'Failed to load survey details';
-          console.error(err);
-        }
-      });
-    }
-  }
-
-  loadSurveyEditionDetails(editionId: number) {
-    this.surveyEditionService.getSurveyEditionById(editionId).subscribe({
-      next: (edition) => {
-        this.surveyEdition = edition;
-        this.editionForm.patchValue({
-          year: edition.year,
-          startDate: edition.startDate,
-          creationDate: edition.creationDate
-        });
+    if (!this.surveyId) return;
+    
+    this.loading = true;
+    this.surveyService.getSurveyById(this.surveyId).subscribe({
+      next: (survey) => {
+        this.survey = survey;
+        this.loading = false;
       },
       error: (err) => {
-        this.error = 'Failed to load survey edition details';
+        this.error = 'Failed to load survey details';
+        this.loading = false;
         console.error(err);
       }
     });
   }
 
-  loadAvailableYears() {
-    if (this.surveyId) {
-      this.surveyEditionService.getSurveyEditionYears(this.surveyId).subscribe({
-        next: (years) => {
-          this.availableYears = years.sort((a, b) => b - a);
-        },
-        error: (err) => {
-          console.error('Failed to load available years', err);
-        }
-      });
+  loadSurveyEditionDetails(editionId: number): void {
+    if (!editionId) return;
+    
+    this.loading = true;
+    this.surveyEditionService.getEditionById(editionId).subscribe({
+      next: (edition: SurveyEdition) => {
+        this.surveyEdition = edition;
+        this.editionForm.patchValue({
+          year: edition.year,
+          startDate: edition.startDate,
+          creationDate: edition.creationDate,
+          status: edition.status || 'DRAFT'
+        });
+        this.loading = false;
+      },
+      error: (err: Error) => {
+        this.error = 'Failed to load survey edition details';
+        this.loading = false;
+        console.error(err);
+      }
+    });
+  }
+
+  loadAvailableYears(): void {
+    if (!this.surveyId) return;
+    
+    this.loading = true;
+    this.surveyEditionService.getEditionsBySurveyId(this.surveyId).subscribe({
+      next: (editions: SurveyEdition[]) => {
+        const years = editions
+          .map(edition => edition.year)
+          .filter((year, index, self) => self.indexOf(year) === index);
+        this.availableYears = years.sort((a, b) => b - a);
+        this.loading = false;
+      },
+      error: (err: Error) => {
+        console.error('Failed to load available years', err);
+        this.loading = false;
+      }
+    });
+  }
+
+  incrementYear(increment: number): void {
+    const yearControl = this.editionForm.get('year');
+    if (yearControl) {
+      const currentYear = yearControl.value || new Date().getFullYear();
+      const newYear = currentYear + increment;
+      if (newYear >= 2000 && newYear <= 2100) {
+        yearControl.setValue(newYear);
+      }
     }
   }
 
-  onSubmit() {
-    if (this.editionForm.invalid) {
+  createSurveyEdition(): void {
+    // Validate surveyId explicitly
+    if (!this.surveyId || isNaN(this.surveyId)) {
+      this.error = 'Invalid survey selected. Please choose a valid survey.';
+      this.router.navigate(['/surveys']);
+      return;
+    }
+
+    if (this.editionForm.valid) {
+      this.loading = true;
+      const editionData: Partial<SurveyEdition> = {
+        ...this.editionForm.value,
+        surveyId: this.surveyId
+      };
+
+      this.surveyEditionService.createEdition(editionData).subscribe({
+        next: (createdEdition) => {
+          this.loading = false;
+          this.router.navigate(['/survey-editions', createdEdition.id]);
+        },
+        error: (err) => {
+          this.error = 'Failed to create survey edition';
+          this.loading = false;
+          console.error(err);
+          // Optionally, show a more detailed error to the user
+          this.router.navigate(['/surveys']);
+        }
+      });
+    } else {
+      this.error = 'Please fill out all required fields';
+    }
+  }
+
+  onSubmit(): void {
+    if (this.editionForm.invalid || !this.surveyId) {
       this.editionForm.markAllAsTouched();
       return;
     }
@@ -120,22 +191,26 @@ export class SurveyEditionCreateComponent implements OnInit {
     this.loading = true;
     const formValue = this.editionForm.value;
 
-    const surveyEditionData: SurveyEdition = {
-      surveyId: this.surveyId!,
+    const surveyEditionData: Partial<SurveyEdition> = {
       year: formValue.year,
-      startDate: new Date(formValue.startDate),
-      creationDate: new Date(formValue.creationDate)
+      startDate: formValue.startDate,
+      creationDate: formValue.creationDate,
+      status: formValue.status,
+      surveyId: this.surveyId
     };
 
+    if (this.isEditMode && this.surveyEdition?.id) {
+      surveyEditionData.id = this.surveyEdition.id;
+    }
+
     const submitAction = this.isEditMode && this.surveyEdition?.id
-      ? this.surveyEditionService.updateSurveyEdition(this.surveyEdition.id, surveyEditionData)
-      : this.surveyEditionService.createSurveyEdition(surveyEditionData);
+      ? this.surveyEditionService.updateEdition(this.surveyEdition.id, surveyEditionData)
+      : this.surveyEditionService.createEdition(surveyEditionData);
 
     submitAction.subscribe({
-      next: (savedEdition) => {
+      next: (savedEdition: SurveyEdition) => {
         this.loading = false;
-        // Navigate to survey edition details
-        this.router.navigate(['/survey-editions', savedEdition.id]);
+        this.router.navigate(['/surveys', this.surveyId, 'editions', savedEdition.id]);
       },
       error: (err: HttpErrorResponse) => {
         this.loading = false;
@@ -145,33 +220,11 @@ export class SurveyEditionCreateComponent implements OnInit {
     });
   }
 
-  navigateToSurveyEditionDetails() {
+  navigateBack(): void {
     if (this.surveyId) {
-      this.router.navigate(['/survey', this.surveyId, 'editions']);
+      this.router.navigate(['/surveys', this.surveyId]);
     } else {
       this.router.navigate(['/surveys']);
-    }
-  }
-
-  onYearClick(event: Event): void {
-    // Type-safe event handling
-    const inputElement = event.target as HTMLInputElement;
-    const year = inputElement.valueAsNumber;
-
-    // Check if year is valid and surveyId exists
-    if (!isNaN(year) && this.surveyId) {
-      this.surveyEditionService.getSurveyEditionByYear(this.surveyId, year).subscribe({
-        next: (edition) => {
-          // Navigate to the specific survey edition details
-          this.router.navigate(['/survey-editions', edition.id]);
-        },
-        error: (err) => {
-          // If no edition found, navigate to create a new edition for this year
-          this.router.navigate(['/survey', this.surveyId, 'editions', 'new'], {
-            queryParams: { year: year }
-          });
-        }
-      });
     }
   }
 }

@@ -1,0 +1,29 @@
+<div class="container">
+  <!-- Error Alert -->
+  <div *ngIf="error()" class="alert alert-danger">
+    {{ error() }}
+  </div>
+
+  <!-- Loading Spinner -->
+  <div *ngIf="loading()" class="text-center">
+    <div class="spinner-border" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <!-- Create Answer Form -->
+  <form [formGroup]="answerForm" (ngSubmit)="createAnswer()" class="mb-4">
+    <div class="form-group mb-3">
+      <input type="text" formControlName="text" class="form-control" placeholder="Answer Text">
+    </div>
+    <div class="form-group mb-3">
+      <input type="number" formControlName="selectionCount" class="form-control" placeholder="Selection Count">
+    </div>
+    <div class="form-group mb-3">
+      <input type="number" formControlName="percentage" class="form-control" placeholder="Percentage">
+    </div>
+    <button type="submit" class="btn btn-primary" [disabled]="!answerForm.valid || loading()">
+      Create Answer
+    </button>
+  </form>
+</div>

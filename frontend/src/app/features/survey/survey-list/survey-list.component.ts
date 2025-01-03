@@ -9,6 +9,7 @@ import { SurveyEdition } from '../../../core/models/survey-edition.model';
 import { SurveyService } from '../../../core/services/survey.service';
 import { OwnerService } from '../../../core/services/owner.service';
 import { SurveyEditionService } from '../../../core/services/survey-edition.service';
+import { Page } from '../../../core/models/page.model';
 
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
@@ -83,6 +84,7 @@ export class SurveyListComponent implements OnInit {
   constructor(
     private surveyService: SurveyService,
     private ownerService: OwnerService,
+    private surveyEditionService: SurveyEditionService,
     private fb: FormBuilder,
     private router: Router
   ) {
@@ -100,14 +102,14 @@ export class SurveyListComponent implements OnInit {
 
   loadSurveys(): void {
     this.loading.set(true);
-    this.surveyService.getSurveys().subscribe({
-      next: (page) => {
+    this.surveyService.getAllSurveys().subscribe({
+      next: (page: any) => {
         // Filter out surveys without an id
-        const validSurveys = page.content.filter(survey => survey.id !== undefined);
+        const validSurveys = page.content.filter((survey: Survey) => survey.id !== undefined);
         this.surveys.set(validSurveys);
         
         // Load editions for each survey with a valid id
-        validSurveys.forEach(survey => {
+        validSurveys.forEach((survey: Survey) => {
           if (survey.id) {
             this.loadSurveyEditions(survey.id);
           }
@@ -115,7 +117,7 @@ export class SurveyListComponent implements OnInit {
         
         this.loading.set(false);
       },
-      error: (err) => {
+      error: (err: Error) => {
         this.error.set('Failed to load surveys');
         this.loading.set(false);
       }
@@ -123,12 +125,16 @@ export class SurveyListComponent implements OnInit {
   }
 
   loadSurveyEditions(surveyId: number): void {
-    this.surveyService.getSurveyEditionsBySurveyId(surveyId).subscribe({
-      next: (editions) => {
+    this.surveyEditionService.getEditionsBySurveyId(surveyId).subscribe({
+      next: (editions: SurveyEdition[]) => {
         // Sort editions by year in descending order
-        this.surveyEditions[surveyId] = editions.sort((a, b) => b.year - a.year);
+        if (editions) {
+          this.surveyEditions[surveyId] = editions.sort((a: SurveyEdition, b: SurveyEdition) => b.year - a.year);
+        } else {
+          this.surveyEditions[surveyId] = [];
+        }
       },
-      error: (err) => {
+      error: (err: Error) => {
         console.error(`Failed to load editions for survey ${surveyId}`, err);
         this.surveyEditions[surveyId] = [];
       }
@@ -137,11 +143,17 @@ export class SurveyListComponent implements OnInit {
 
   loadOwners(): void {
     this.ownerService.getOwners().subscribe({
-      next: (ownersPage) => {
-        this.owners.set(ownersPage.content);
+      next: (response: Page<Owner>) => {
+        if (response && response.content) {
+          this.owners.set(response.content);
+        } else {
+          this.owners.set([]);
+        }
       },
-      error: (err) => {
+      error: (err: Error) => {
         console.error('Failed to load owners', err);
+        this.error.set('Failed to load owners');
+        this.owners.set([]);
       }
     });
   }
@@ -176,7 +188,7 @@ export class SurveyListComponent implements OnInit {
 
       this.processingOwner.set(true);
       this.surveyService.updateSurvey(surveyId, updatedSurvey).subscribe({
-        next: (updated) => {
+        next: (updated: any) => {
           // Mettre à jour le sondage dans la liste
           const updatedSurveys = this.surveys().map(s => 
             s.id === surveyId ? { ...s, ...updated } : s
@@ -185,7 +197,7 @@ export class SurveyListComponent implements OnInit {
           this.editingSurveyId = null;
           this.processingOwner.set(false);
         },
-        error: (err) => {
+        error: (err: Error) => {
           console.error('Échec de la mise à jour du sondage', err);
           this.error.set('Échec de la mise à jour du sondage');
           this.processingOwner.set(false);
@@ -283,7 +295,7 @@ export class SurveyListComponent implements OnInit {
         return this.surveyService.createSurvey(surveyToCreate);
       })
     ).subscribe({
-      next: (createdSurvey) => {
+      next: (createdSurvey: any) => {
         // Add to surveys list
         this.surveys.update(surveys => [...surveys, createdSurvey]);
         
@@ -292,7 +304,7 @@ export class SurveyListComponent implements OnInit {
         this._draftSurvey = null;
         this.creationError = null;
       },
-      error: (err) => {
+      error: (err: Error) => {
         // Handle creation error
         this.creationError = 'Failed to create survey. Please try again.';
         console.error('Survey creation error', err);
@@ -339,7 +351,7 @@ export class SurveyListComponent implements OnInit {
           bootstrap.Modal.getInstance(deleteModal)?.hide();
         }
       },
-      error: (err) => {
+      error: (err: Error) => {
         console.error('Échec de la suppression du sondage', err);
         this.error.set('Échec de la suppression du sondage');
         this.processingOwner.set(false);
@@ -355,9 +367,13 @@ export class SurveyListComponent implements OnInit {
   }
 
   navigateToNewSurveyEdition(surveyId?: number): void {
-    if (surveyId) {
+    if (surveyId && !isNaN(surveyId)) {
       // Navigate to create new survey edition for this survey
-      this.router.navigate(['/surveys', surveyId, 'editions', 'new']);
+      this.router.navigate(['/survey-editions/new', surveyId]);
+    } else {
+      // Handle invalid survey ID
+      console.error('Invalid survey ID for creating new edition');
+      // Optionally show an error message or toast
     }
   }
 }

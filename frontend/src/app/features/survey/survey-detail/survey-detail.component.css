@@ -1,9 +1,34 @@
 /* Survey Detail Styles */
 
+:host {
+  display: block;
+  margin: 0;
+  padding: 0;
+}
+
 .survey-detail-container {
   max-width: 800px;
   margin: 0 auto;
   padding: 20px;
+}
+
+.card {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.card-title {
+  color: #2c3e50;
+  margin-bottom: 1rem;
+}
+
+.created-by {
+  color: #7f8c8d;
+  font-size: 0.9rem;
 }
 
 .editions-section {
@@ -38,6 +63,14 @@
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
+.edition-card {
+  transition: transform 0.2s ease;
+}
+
+.edition-card:hover {
+  transform: translateY(-2px);
+}
+
 .edition-details {
   margin-top: 20px;
   padding: 20px;
@@ -59,4 +92,52 @@
 h1, h3 {
   color: var(--text-color);
   margin-bottom: 15px;
+}
+
+.btn-outline-primary {
+  border-width: 2px;
+}
+
+.btn-outline-danger {
+  border-width: 2px;
+}
+
+.loading-spinner {
+  margin: 2rem auto;
+  width: 3rem;
+  height: 3rem;
+}
+
+.alert {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Modal Styles */
+.modal-content {
+  border-radius: 0.5rem;
+}
+
+.modal-header {
+  border-bottom: 2px solid #e9ecef;
+}
+
+.modal-footer {
+  border-top: 2px solid #e9ecef;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .card-body {
+    padding: 1rem;
+  }
+  
+  .btn-group {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .btn {
+    width: 100%;
+  }
 }

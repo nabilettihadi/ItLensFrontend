@@ -34,16 +34,15 @@ export class SurveyEditionListComponent implements OnInit {
 
   loadEditions(): void {
     this.loading.set(true);
-    this.surveyEditionService.getSurveyEditionsBySurveyId(this.surveyId).subscribe({
-      next: (editions: SurveyEdition[]) => {
-        this.editions.set(editions);
+    this.surveyEditionService.getEditionsBySurveyId(this.surveyId).subscribe({
+      next: (response: any) => {
+        this.editions.set(response.content);
         this.loading.set(false);
       },
-      error: (error: unknown) => {
+      error: (error: Error) => {
         this.loading.set(false);
-        if (error instanceof HttpErrorResponse) {
-          this.error.set(error.error?.message || 'Failed to load editions');
-        }
+        this.error.set('Failed to load editions');
+        console.error(error);
       }
     });
   }
@@ -55,15 +54,14 @@ export class SurveyEditionListComponent implements OnInit {
 
   deleteEdition(): void {
     if (this.selectedEditionId) {
-      this.surveyEditionService.deleteSurveyEdition(this.selectedEditionId).subscribe({
+      this.surveyEditionService.deleteEdition(this.selectedEditionId).subscribe({
         next: () => {
           this.deleteModal.hide();
           this.loadEditions();
         },
-        error: (error: unknown) => {
-          if (error instanceof HttpErrorResponse) {
-            this.error.set(error.error?.message || 'Failed to delete edition');
-          }
+        error: (error: Error) => {
+          this.error.set('Failed to delete edition');
+          console.error(error);
           this.deleteModal.hide();
         }
       });
@@ -74,13 +72,13 @@ export class SurveyEditionListComponent implements OnInit {
     if (!this.surveyId) return;
 
     surveyEdition.surveyId = this.surveyId;
-    this.surveyEditionService.createSurveyEdition(surveyEdition).subscribe({
+    this.surveyEditionService.createEdition(surveyEdition).subscribe({
       next: (edition: SurveyEdition) => {
         this.editions.update(editions => [...editions, edition]);
       },
-      error: (error: unknown) => {
-        this.error.set('Failed to create survey edition');
-        console.error('Error creating survey edition:', error);
+      error: (error: Error) => {
+        this.error.set('Failed to create edition');
+        console.error(error);
       }
     });
   }

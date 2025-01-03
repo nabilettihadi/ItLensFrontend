@@ -2,27 +2,21 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Survey } from '../models/survey.model';
-import { SurveyEdition } from '../models/survey-edition.model';
-import { Page } from '../models/page.model';
 import { environment } from '../../../environments/environment';
-import { SurveyEditionService } from './survey-edition.service';
+import { Page } from '../models/page.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SurveyService {
-  private apiUrl = `${environment.apiBaseUrl}/surveys`;
+  private apiUrl = `${environment.apiUrl}/api/surveys`;
 
-  constructor(
-    private http: HttpClient,
-    private surveyEditionService: SurveyEditionService
-  ) {}
+  constructor(private http: HttpClient) {}
 
-  getSurveys(page: number = 0, size: number = 10): Observable<Page<Survey>> {
+  getAllSurveys(page: number = 0, size: number = 10): Observable<Page<Survey>> {
     const params = new HttpParams()
       .set('page', page.toString())
       .set('size', size.toString());
-    
     return this.http.get<Page<Survey>>(this.apiUrl, { params });
   }
 
@@ -30,23 +24,22 @@ export class SurveyService {
     return this.http.get<Survey>(`${this.apiUrl}/${id}`);
   }
 
-  getById(id: number): Observable<Survey> {
-    return this.getSurveyById(id);
+  getSurveysByOwnerId(ownerId: number, page: number = 0, size: number = 10): Observable<Page<Survey>> {
+    const params = new HttpParams()
+      .set('page', page.toString())
+      .set('size', size.toString());
+    return this.http.get<Page<Survey>>(`${this.apiUrl}/owner/${ownerId}`, { params });
   }
 
-  createSurvey(survey: Partial<Survey>): Observable<Survey> {
-    return this.http.post<Survey>(this.apiUrl, survey);
+  createSurvey(surveyDTO: Survey): Observable<Survey> {
+    return this.http.post<Survey>(this.apiUrl, surveyDTO);
   }
 
-  updateSurvey(id: number, survey: Partial<Survey>): Observable<Survey> {
-    return this.http.put<Survey>(`${this.apiUrl}/${id}`, survey);
+  updateSurvey(id: number, surveyDTO: Survey): Observable<Survey> {
+    return this.http.put<Survey>(`${this.apiUrl}/${id}`, surveyDTO);
   }
 
   deleteSurvey(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
-  }
-
-  getSurveyEditionsBySurveyId(surveyId: number): Observable<SurveyEdition[]> {
-    return this.surveyEditionService.getSurveyEditionsBySurveyId(surveyId);
   }
 }

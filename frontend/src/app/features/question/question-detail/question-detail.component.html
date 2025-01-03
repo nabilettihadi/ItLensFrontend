@@ -1,0 +1,87 @@
+<div class="container" *ngIf="question()">
+  <!-- Error Alert -->
+  <div *ngIf="error()" class="alert alert-danger">
+    {{ error() }}
+  </div>
+
+  <!-- Loading Spinner -->
+  <div *ngIf="loading()" class="text-center">
+    <div class="spinner-border" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <!-- Question Details -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="w-100">
+          <div *ngIf="!editing()">
+            <h2>{{ question().text }}</h2>
+            <p>Type: {{ question().type }}</p>
+            <p>Answer Count: {{ question().answerCount }}</p>
+          </div>
+          <form *ngIf="editing()" [formGroup]="questionForm" (ngSubmit)="saveQuestion()" class="w-100">
+            <div class="mb-3">
+              <input type="text" formControlName="text" class="form-control" placeholder="Question Text">
+            </div>
+            <div class="mb-3">
+              <select formControlName="type" class="form-select">
+                <option *ngFor="let type of questionTypes" [value]="type">
+                  {{ type }}
+                </option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <input type="number" formControlName="answerCount" class="form-control" placeholder="Answer Count">
+            </div>
+            <div class="btn-group">
+              <button type="submit" class="btn btn-success" [disabled]="!questionForm.valid">Save</button>
+              <button type="button" class="btn btn-secondary" (click)="cancelEditing()">Cancel</button>
+            </div>
+          </form>
+        </div>
+        <button *ngIf="!editing()" class="btn btn-primary" (click)="startEditing()">Edit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Answers Section -->
+  <div class="card">
+    <div class="card-header">
+      <h3>Answers</h3>
+    </div>
+    <div class="card-body">
+      <!-- Add Answer Form -->
+      <form [formGroup]="answerForm" (ngSubmit)="createAnswer()" class="mb-4">
+        <div class="form-group mb-3">
+          <input type="text" formControlName="text" class="form-control" placeholder="Answer Text">
+        </div>
+        <div class="form-group mb-3">
+          <input type="number" formControlName="selectionCount" class="form-control" placeholder="Selection Count">
+        </div>
+        <button type="submit" class="btn btn-primary" [disabled]="!answerForm.valid || loading()">
+          Add Answer
+        </button>
+      </form>
+
+      <!-- Answers List -->
+      <div class="list-group">
+        <div *ngFor="let answer of answers()" class="list-group-item">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h5 class="mb-1">{{ answer.text }}</h5>
+              <small>Selections: {{ answer.selectionCount }}</small>
+            </div>
+            <button class="btn btn-sm btn-outline-danger" (click)="deleteAnswer(answer.id)">
+              Delete
+            </button>
+          </div>
+        </div>
+        <div *ngIf="answers().length === 0" class="text-muted">
+          No answers found
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
