@@ -31,7 +31,7 @@ export class SurveyEditionDetailComponent implements OnInit {
     this.route.params.subscribe(params => {
       const surveyId = +params['surveyId'];
       const year = +params['year'];
-      
+
       if (surveyId && year) {
         this.loadEditionByYearAndSurveyId(surveyId, year);
       } else if (params['editionId']) {
@@ -76,8 +76,8 @@ export class SurveyEditionDetailComponent implements OnInit {
     this.surveyEditionService.getEditionById(editionId).subscribe({
       next: (edition: SurveyEdition) => {
         this.edition.set(edition);
-        if (edition.surveyId) {
-          this.surveyService.getSurveyById(edition.surveyId).subscribe({
+        if (edition.survey) {
+          this.surveyService.getSurveyById(edition.survey.id).subscribe({
             next: (survey) => {
               this.survey.set(survey);
               this.loading.set(false);
@@ -102,10 +102,10 @@ export class SurveyEditionDetailComponent implements OnInit {
     const currentEdition = this.edition();
     if (currentEdition && currentEdition.id) {
       this.router.navigate([
-        '/surveys', 
-        currentEdition.surveyId, 
-        'editions', 
-        currentEdition.id, 
+        '/surveys',
+        currentEdition.survey,
+        'editions',
+        currentEdition.id,
         'edit'
       ]);
     }
@@ -114,7 +114,7 @@ export class SurveyEditionDetailComponent implements OnInit {
   goBack(): void {
     const currentEdition = this.edition();
     if (currentEdition) {
-      this.router.navigate(['/surveys', currentEdition.surveyId]);
+      this.router.navigate(['/surveys', currentEdition.survey]);
     } else {
       this.router.navigate(['/surveys']);
     }

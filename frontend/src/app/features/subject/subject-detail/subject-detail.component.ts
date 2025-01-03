@@ -1,125 +1,126 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, ActivatedRoute } from '@angular/router';
-import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Subject } from '../../../core/models/subject.model';
-import { Question } from '../../../core/models/question.model';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { SubjectService } from '../../../core/services/subject.service';
 import { QuestionService } from '../../../core/services/question.service';
+import { Subject } from '../../../core/models/subject.model';
+import { Question } from '../../../core/models/question.model';
 
 @Component({
   selector: 'app-subject-detail',
-  standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule, FormsModule],
   templateUrl: './subject-detail.component.html',
-  styleUrls: ['./subject-detail.component.css']
+  styleUrls: ['./subject-detail.component.css'],
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, FormsModule]
 })
 export class SubjectDetailComponent implements OnInit {
-  subject = signal<Subject | null>(null);
-  questions = signal<Question[]>([]);
-  children = signal<Subject[]>([]);
-  loading = signal(false);
-  error = signal<string | null>(null);
-  editing = signal(false);
-
+  subject: Subject | null = null;
+  questions: Question[] = [];
+  children: Subject[] = [];
+  loading = false;
+  error: string | null = null;
+  editing = false;
   subjectForm: FormGroup;
 
   constructor(
-    private route: ActivatedRoute,
+    private fb: FormBuilder,
     private subjectService: SubjectService,
     private questionService: QuestionService,
-    private fb: FormBuilder
+    private route: ActivatedRoute
   ) {
     this.subjectForm = this.fb.group({
-      title: ['', Validators.required]
+      title: ['', [Validators.required, Validators.minLength(3)]]
     });
   }
 
   ngOnInit(): void {
-    const id = Number(this.route.snapshot.paramMap.get('id'));
-    if (id) {
-      this.loadSubject(id);
-    }
+    this.route.params.subscribe(params => {
+      if (params['id']) {
+        this.loadSubject(+params['id']);
+      }
+    });
   }
 
   loadSubject(id: number): void {
-    this.loading.set(true);
-    this.subjectService.getSubjectById(id)
-      .subscribe({
-        next: (subject) => {
-          this.subject.set(subject);
-          this.subjectForm.patchValue({
-            title: subject.title
-          });
-          this.loadChildren(id);
-          this.loadQuestions(id);
-          this.loading.set(false);
-        },
-        error: (err) => {
-          this.error.set('Error loading subject');
-          this.loading.set(false);
-        }
-      });
+    this.loading = true;
+    this.error = null;
+
+    this.subjectService.getSubjectById(id).subscribe({
+      next: (subject: Subject) => {
+        this.subject = subject;
+        this.subjectForm.patchValue({
+          title: subject.title
+        });
+        this.loadChildren(id);
+        this.loadQuestions(id);
+        this.loading = false;
+      },
+      error: (error: any) => {
+        this.error = error.message || 'Error loading subject';
+        this.loading = false;
+      }
+    });
   }
 
   loadChildren(id: number): void {
-    this.subjectService.getChildSubjects(id)
-      .subscribe({
-        next: (children) => {
-          this.children.set(children);
-        },
-        error: (err) => {
-          this.error.set('Error loading child subjects');
-        }
-      });
+    this.subjectService.getChildSubjects(id).subscribe({
+      next: (children: Subject[]) => {
+        this.children = children;
+      },
+      error: (error: any) => {
+        this.error = error.message || 'Error loading child subjects';
+      }
+    });
   }
 
   loadQuestions(id: number): void {
-    this.questionService.getQuestionsBySubjectId(id)
-      .subscribe({
-        next: (response) => {
-          this.questions.set(response.content);
-        },
-        error: (err) => {
-          this.error.set('Error loading questions');
-        }
-      });
+    this.questionService.getQuestionsBySubjectId(id).subscribe({
+      next: (response: any) => {
+        this.questions = response.content;
+      },
+      error: (error: any) => {
+        this.error = error.message || 'Error loading questions';
+      }
+    });
   }
 
   startEditing(): void {
-    this.editing.set(true);
+    this.editing = true;
   }
 
   cancelEditing(): void {
-    this.editing.set(false);
-    if (this.subject()) {
+    this.editing = false;
+    if (this.subject) {
       this.subjectForm.patchValue({
-        title: this.subject()!.title
+        title: this.subject.title
       });
     }
   }
 
   saveSubject(): void {
-    const currentSubject = this.subject();
-    if (this.subjectForm.valid && currentSubject && typeof currentSubject.id === 'number') {
-      this.loading.set(true);
-      this.subjectService.updateSubject(currentSubject.id, {
-        ...currentSubject,
+    if (this.subjectForm.valid && this.subject) {
+      this.loading = true;
+      this.error = null;
+
+      const updatedSubject: Subject = {
+        ...this.subject,
         ...this.subjectForm.value
-      }).subscribe({
-        next: (updatedSubject) => {
-          this.subject.set(updatedSubject);
-          this.loading.set(false);
-          this.editing.set(false);
+      };
+
+      this.subjectService.updateSubject(this.subject.id!, updatedSubject).subscribe({
+        next: (subject: Subject) => {
+          this.subject = subject;
+          this.editing = false;
+          this.loading = false;
         },
-        error: (err) => {
-          this.error.set('Erreur lors de la mise à jour du sujet');
-          this.loading.set(false);
+        error: (error: any) => {
+          this.error = error.message || 'Error updating subject';
+          this.loading = false;
         }
       });
     } else {
-      // Gestion du cas où le formulaire est invalide ou le sujet n'existe pas
-      this.error.set('Veuillez remplir correctement le formulaire');
+      this.error = 'Please fill in the form correctly';
     }
   }
 }

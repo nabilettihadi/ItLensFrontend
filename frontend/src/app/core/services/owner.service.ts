@@ -9,7 +9,7 @@ import { environment } from '../../../environments/environment';
   providedIn: 'root'
 })
 export class OwnerService {
-  private apiUrl = `${environment.apiBaseUrl}/api/owners`;
+  private apiUrl = `${environment.apiUrl}/api/owners`;
 
   constructor(private http: HttpClient) {}
 
@@ -17,7 +17,7 @@ export class OwnerService {
     const params = new HttpParams()
       .set('page', page.toString())
       .set('size', size.toString());
-    
+
     return this.http.get<Page<Owner>>(this.apiUrl, { params });
   }
 

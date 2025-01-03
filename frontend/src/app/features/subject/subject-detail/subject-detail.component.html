@@ -1,11 +1,11 @@
-<div class="container" *ngIf="subject()">
+<div class="container" *ngIf="subject">
   <!-- Error Alert -->
-  <div *ngIf="error()" class="alert alert-danger">
-    {{ error() }}
+  <div *ngIf="error" class="alert alert-danger">
+    {{ error }}
   </div>
 
   <!-- Loading Spinner -->
-  <div *ngIf="loading()" class="text-center">
+  <div *ngIf="loading" class="text-center">
     <div class="spinner-border" role="status">
       <span class="visually-hidden">Loading...</span>
     </div>
@@ -16,8 +16,8 @@
     <div class="card-body">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-          <h2 *ngIf="!editing()">{{ subject().title }}</h2>
-          <form *ngIf="editing()" [formGroup]="subjectForm" (ngSubmit)="saveSubject()" class="w-100">
+          <h2 *ngIf="!editing">{{ subject.title }}</h2>
+          <form *ngIf="editing" [formGroup]="subjectForm" (ngSubmit)="saveSubject()" class="w-100">
             <div class="input-group">
               <input type="text" formControlName="title" class="form-control">
               <button type="submit" class="btn btn-success" [disabled]="!subjectForm.valid">Save</button>
@@ -25,54 +25,51 @@
             </div>
           </form>
         </div>
-        <button *ngIf="!editing()" class="btn btn-primary" (click)="startEditing()">Edit</button>
+        <button *ngIf="!editing" class="btn btn-primary" (click)="startEditing()">Edit</button>
       </div>
     </div>
   </div>
 
   <!-- Child Subjects -->
   <div class="card mb-4">
-    <div class="card-header">
+    <div class="card-header d-flex justify-content-between align-items-center">
       <h3>Child Subjects</h3>
+      <button class="btn btn-primary" [routerLink]="['/subjects/create']" [queryParams]="{parentId: subject.id}">
+        Add Child Subject
+      </button>
     </div>
     <div class="card-body">
+      <div *ngIf="children.length === 0" class="text-muted">
+        No child subjects found
+      </div>
       <div class="list-group">
-        <div *ngFor="let child of children()" class="list-group-item">
-          <div class="d-flex justify-content-between align-items-center">
-            <h5 class="mb-1">{{ child.title }}</h5>
-            <button class="btn btn-sm btn-outline-primary" [routerLink]="['/subjects', child.id]">
-              View
-            </button>
-          </div>
-        </div>
-        <div *ngIf="children().length === 0" class="text-muted">
-          No child subjects found
-        </div>
+        <a *ngFor="let child of children" 
+           [routerLink]="['/subjects', child.id]" 
+           class="list-group-item list-group-item-action">
+          {{ child.title }}
+        </a>
       </div>
     </div>
   </div>
 
   <!-- Questions -->
   <div class="card">
-    <div class="card-header">
+    <div class="card-header d-flex justify-content-between align-items-center">
       <h3>Questions</h3>
+      <button class="btn btn-primary" [routerLink]="['/questions/create']" [queryParams]="{subjectId: subject.id}">
+        Add Question
+      </button>
     </div>
     <div class="card-body">
+      <div *ngIf="questions.length === 0" class="text-muted">
+        No questions found
+      </div>
       <div class="list-group">
-        <div *ngFor="let question of questions()" class="list-group-item">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <h5 class="mb-1">{{ question.text }}</h5>
-              <small>Type: {{ question.type }}</small>
-            </div>
-            <button class="btn btn-sm btn-outline-primary" [routerLink]="['/questions', question.id]">
-              View
-            </button>
-          </div>
-        </div>
-        <div *ngIf="questions().length === 0" class="text-muted">
-          No questions found
-        </div>
+        <a *ngFor="let question of questions" 
+           [routerLink]="['/questions', question.id]" 
+           class="list-group-item list-group-item-action">
+          {{ question.text }}
+        </a>
       </div>
     </div>
   </div>

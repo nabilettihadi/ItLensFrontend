@@ -1,85 +1,97 @@
-<div class="container" *ngIf="question()">
-  <!-- Error Alert -->
-  <div *ngIf="error()" class="alert alert-danger">
-    {{ error() }}
-  </div>
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-12">
+      <div *ngIf="loading()" class="text-center">
+        <div class="spinner-border" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
 
-  <!-- Loading Spinner -->
-  <div *ngIf="loading()" class="text-center">
-    <div class="spinner-border" role="status">
-      <span class="visually-hidden">Loading...</span>
-    </div>
-  </div>
+      <div *ngIf="error()" class="alert alert-danger">
+        {{ error() }}
+      </div>
 
-  <!-- Question Details -->
-  <div class="card mb-4">
-    <div class="card-body">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <div class="w-100">
-          <div *ngIf="!editing()">
-            <h2>{{ question().text }}</h2>
-            <p>Type: {{ question().type }}</p>
-            <p>Answer Count: {{ question().answerCount }}</p>
+      <div *ngIf="question() && !loading()" class="card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2>{{ question()?.text }}</h2>
+            <button class="btn btn-primary" (click)="editing.set(!editing())">
+              {{ editing() ? 'Cancel' : 'Edit' }}
+            </button>
           </div>
-          <form *ngIf="editing()" [formGroup]="questionForm" (ngSubmit)="saveQuestion()" class="w-100">
+
+          <div *ngIf="!editing()">
+            <p>Type: {{ question()?.type }}</p>
+            <p>Answer Count: {{ question()?.answerCount }}</p>
+          </div>
+
+          <form *ngIf="editing()" [formGroup]="questionForm" (ngSubmit)="onSubmit()" class="w-100">
             <div class="mb-3">
-              <input type="text" formControlName="text" class="form-control" placeholder="Question Text">
+              <label for="text" class="form-label">Question Text</label>
+              <input type="text" class="form-control" id="text" formControlName="text">
+              <div *ngIf="questionForm.get('text')?.invalid && questionForm.get('text')?.touched" class="text-danger">
+                Question text is required
+              </div>
             </div>
+
             <div class="mb-3">
-              <select formControlName="type" class="form-select">
-                <option *ngFor="let type of questionTypes" [value]="type">
-                  {{ type }}
-                </option>
+              <label for="type" class="form-label">Question Type</label>
+              <select class="form-select" id="type" formControlName="type">
+                <option *ngFor="let type of questionTypes" [value]="type">{{ type }}</option>
               </select>
+              <div *ngIf="questionForm.get('type')?.invalid && questionForm.get('type')?.touched" class="text-danger">
+                Question type is required
+              </div>
             </div>
+
             <div class="mb-3">
-              <input type="number" formControlName="answerCount" class="form-control" placeholder="Answer Count">
+              <label for="answerCount" class="form-label">Answer Count</label>
+              <input type="number" class="form-control" id="answerCount" formControlName="answerCount">
+              <div *ngIf="questionForm.get('answerCount')?.invalid && questionForm.get('answerCount')?.touched" class="text-danger">
+                <span *ngIf="questionForm.get('answerCount')?.errors?.['required']">Answer count is required</span>
+                <span *ngIf="questionForm.get('answerCount')?.errors?.['min']">Answer count must be at least 0</span>
+              </div>
             </div>
-            <div class="btn-group">
-              <button type="submit" class="btn btn-success" [disabled]="!questionForm.valid">Save</button>
-              <button type="button" class="btn btn-secondary" (click)="cancelEditing()">Cancel</button>
-            </div>
+
+            <button type="submit" class="btn btn-primary" [disabled]="questionForm.invalid">Save Changes</button>
           </form>
         </div>
-        <button *ngIf="!editing()" class="btn btn-primary" (click)="startEditing()">Edit</button>
       </div>
-    </div>
-  </div>
 
-  <!-- Answers Section -->
-  <div class="card">
-    <div class="card-header">
-      <h3>Answers</h3>
-    </div>
-    <div class="card-body">
-      <!-- Add Answer Form -->
-      <form [formGroup]="answerForm" (ngSubmit)="createAnswer()" class="mb-4">
-        <div class="form-group mb-3">
-          <input type="text" formControlName="text" class="form-control" placeholder="Answer Text">
-        </div>
-        <div class="form-group mb-3">
-          <input type="number" formControlName="selectionCount" class="form-control" placeholder="Selection Count">
-        </div>
-        <button type="submit" class="btn btn-primary" [disabled]="!answerForm.valid || loading()">
-          Add Answer
-        </button>
-      </form>
-
-      <!-- Answers List -->
-      <div class="list-group">
-        <div *ngFor="let answer of answers()" class="list-group-item">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <h5 class="mb-1">{{ answer.text }}</h5>
-              <small>Selections: {{ answer.selectionCount }}</small>
+      <div *ngIf="question() && !loading()" class="mt-4">
+        <h3>Add Answer</h3>
+        <form [formGroup]="answerForm" (ngSubmit)="onAnswerSubmit()" class="mb-4">
+          <div class="mb-3">
+            <label for="answerText" class="form-label">Answer Text</label>
+            <input type="text" class="form-control" id="answerText" formControlName="text">
+            <div *ngIf="answerForm.get('text')?.invalid && answerForm.get('text')?.touched" class="text-danger">
+              Answer text is required
             </div>
-            <button class="btn btn-sm btn-outline-danger" (click)="deleteAnswer(answer.id)">
+          </div>
+
+          <div class="mb-3">
+            <label for="selectionCount" class="form-label">Selection Count</label>
+            <input type="number" class="form-control" id="selectionCount" formControlName="selectionCount">
+            <div *ngIf="answerForm.get('selectionCount')?.invalid && answerForm.get('selectionCount')?.touched" class="text-danger">
+              <span *ngIf="answerForm.get('selectionCount')?.errors?.['required']">Selection count is required</span>
+              <span *ngIf="answerForm.get('selectionCount')?.errors?.['min']">Selection count must be at least 0</span>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary" [disabled]="answerForm.invalid">Add Answer</button>
+        </form>
+
+        <h3>Answers</h3>
+        <div class="list-group">
+          <div *ngFor="let answer of answers()" class="list-group-item list-group-item-action">
+            <div class="d-flex w-100 justify-content-between">
+              <h5 class="mb-1">{{ answer.text }}</h5>
+              <small>Selection Count: {{ answer.selectionCount }}</small>
+            </div>
+            <button class="btn btn-sm btn-outline-danger" (click)="onDeleteAnswer(answer.id!)" *ngIf="answer.id">
               Delete
             </button>
           </div>
-        </div>
-        <div *ngIf="answers().length === 0" class="text-muted">
-          No answers found
         </div>
       </div>
     </div>

@@ -7,6 +7,7 @@ import { Answer } from '../../../core/models/answer.model';
 import { QuestionType } from '../../../core/models/question-type.enum';
 import { QuestionService } from '../../../core/services/question.service';
 import { AnswerService } from '../../../core/services/answer.service';
+import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
   selector: 'app-question-detail',
@@ -50,103 +51,118 @@ export class QuestionDetailComponent implements OnInit {
       const questionId = parseInt(id, 10);
       if (!isNaN(questionId)) {
         this.loadQuestion(questionId);
-      } else {
-        this.error.set('Invalid question ID');
+        this.loadAnswers(questionId);
       }
     }
   }
 
-  loadQuestion(id: number): void {
+  private loadQuestion(id: number): void {
     this.loading.set(true);
+    this.error.set(null);
+    
     this.questionService.getQuestionById(id).subscribe({
-      next: (question) => {
+      next: (question: Question) => {
         this.question.set(question);
         this.questionForm.patchValue({
           text: question.text,
           type: question.type,
           answerCount: question.answerCount
         });
-        this.loadAnswers(id);
         this.loading.set(false);
       },
-      error: (err) => {
-        this.error.set('Failed to load question');
+      error: (err: HttpErrorResponse) => {
+        this.error.set('Failed to load question: ' + err.message);
         this.loading.set(false);
       }
     });
   }
 
-  loadAnswers(questionId: number): void {
+  private loadAnswers(questionId: number): void {
+    this.loading.set(true);
+    this.error.set(null);
+
     this.answerService.getAnswersByQuestionId(questionId).subscribe({
-      next: (answers) => {
+      next: (answers: Answer[]) => {
         this.answers.set(answers);
+        this.loading.set(false);
       },
-      error: (err) => {
-        this.error.set('Error loading answers');
+      error: (err: HttpErrorResponse) => {
+        this.error.set('Failed to load answers: ' + err.message);
+        this.loading.set(false);
       }
     });
   }
 
   onSubmit(): void {
     if (this.questionForm.valid && this.question()) {
-      const currentQuestion = this.question();
-      if (currentQuestion && currentQuestion.id) {
-        const updatedQuestion: Question = {
-          ...currentQuestion,
-          ...this.questionForm.value
-        };
-
-        this.questionService.updateQuestion(currentQuestion.id, updatedQuestion).subscribe({
-          next: (question) => {
-            this.question.set(question);
-            this.editing.set(false);
-          },
-          error: (err) => {
-            this.error.set('Failed to update question');
-          }
-        });
+      const currentQuestion = this.question()!;
+      if (!currentQuestion.id) {
+        this.error.set('Question ID is missing');
+        return;
       }
-    }
-  }
 
-  addAnswer(): void {
-    if (this.answerForm.valid && this.question()) {
-      const currentQuestion = this.question();
-      if (currentQuestion && currentQuestion.id) {
-        const answer: Answer = {
-          ...this.answerForm.value,
-          questionId: currentQuestion.id
-        };
+      const updatedQuestion: Question = {
+        ...currentQuestion,
+        ...this.questionForm.value
+      };
 
-        this.answerService.createAnswer(answer).subscribe({
-          next: (newAnswer) => {
-            this.answers.update(answers => [...answers, newAnswer]);
-            this.answerForm.reset({
-              text: '',
-              selectionCount: 0
-            });
-          },
-          error: (err) => {
-            this.error.set('Failed to add answer');
-          }
-        });
-      }
-    }
-  }
+      this.loading.set(true);
+      this.error.set(null);
 
-  startEditing(): void {
-    this.editing.set(true);
-  }
-
-  cancelEditing(): void {
-    const currentQuestion = this.question();
-    if (currentQuestion) {
-      this.questionForm.patchValue({
-        text: currentQuestion.text,
-        type: currentQuestion.type,
-        answerCount: currentQuestion.answerCount
+      this.questionService.updateQuestion(currentQuestion.id, updatedQuestion).subscribe({
+        next: (question: Question) => {
+          this.question.set(question);
+          this.editing.set(false);
+          this.loading.set(false);
+        },
+        error: (err: HttpErrorResponse) => {
+          this.error.set('Failed to update question: ' + err.message);
+          this.loading.set(false);
+        }
       });
     }
-    this.editing.set(false);
+  }
+
+  onAnswerSubmit(): void {
+    if (this.answerForm.valid && this.question()) {
+      const newAnswer: Answer = {
+        ...this.answerForm.value,
+        questionId: this.question()!.id
+      };
+
+      this.loading.set(true);
+      this.error.set(null);
+
+      this.answerService.createAnswer(newAnswer).subscribe({
+        next: (answer: Answer) => {
+          this.answers.update(answers => [...answers, answer]);
+          this.answerForm.reset({
+            text: '',
+            selectionCount: 0
+          });
+          this.loading.set(false);
+        },
+        error: (err: HttpErrorResponse) => {
+          this.error.set('Failed to create answer: ' + err.message);
+          this.loading.set(false);
+        }
+      });
+    }
+  }
+
+  onDeleteAnswer(answerId: number): void {
+    this.loading.set(true);
+    this.error.set(null);
+
+    this.answerService.deleteAnswer(answerId).subscribe({
+      next: () => {
+        this.answers.update(answers => answers.filter(a => a.id !== answerId));
+        this.loading.set(false);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.error.set('Failed to delete answer: ' + err.message);
+        this.loading.set(false);
+      }
+    });
   }
 }

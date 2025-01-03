@@ -31,14 +31,14 @@ export class SurveyEditionService {
 
   createEdition(edition: Partial<SurveyEdition>): Observable<SurveyEdition> {
     // Validate surveyId before sending
-    if (!edition.surveyId || isNaN(Number(edition.surveyId))) {
+    if (!edition.survey?.id || isNaN(Number(edition.survey.id))) {
       return throwError(() => new Error('Invalid survey ID'));
     }
 
     const { id, ...editionWithoutId } = edition;
     return this.http.post<SurveyEdition>(this.apiUrl, {
       ...editionWithoutId,
-      surveyId: Number(edition.surveyId)  // Explicitly convert to number
+      surveyId: Number(edition.survey.id)  // Explicitly convert to number
     }).pipe(
       catchError(error => {
         console.error('Survey Edition Creation Error', error);

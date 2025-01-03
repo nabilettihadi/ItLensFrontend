@@ -20,7 +20,7 @@ export class SurveyService {
     return this.http.get<Page<Survey>>(this.apiUrl, { params });
   }
 
-  getSurveyById(id: number): Observable<Survey> {
+    getSurveyById(id: number | undefined): Observable<Survey> {
     return this.http.get<Survey>(`${this.apiUrl}/${id}`);
   }
 

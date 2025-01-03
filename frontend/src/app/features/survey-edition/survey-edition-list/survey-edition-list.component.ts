@@ -1,9 +1,11 @@
-import { Component, OnInit, signal, Input } from '@angular/core';
+import { Component, OnInit, signal, computed, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { SurveyEdition } from '../../../core/models/survey-edition.model';
 import { SurveyEditionService } from '../../../core/services/survey-edition.service';
+import { Survey } from '../../../core/models/survey.model';
 import { HttpErrorResponse } from '@angular/common/http';
+import { ActivatedRoute } from '@angular/router';
 
 declare var bootstrap: any;
 
@@ -15,34 +17,44 @@ declare var bootstrap: any;
   styleUrls: ['./survey-edition-list.component.css']
 })
 export class SurveyEditionListComponent implements OnInit {
-  @Input() surveyId!: number;
-
+  private _survey = signal<Survey | undefined>(undefined);
+  surveyId = computed(() => this._survey()?.id);
+  
   editions = signal<SurveyEdition[]>([]);
-  loading = signal<boolean>(false);
+  loading = signal(false);
   error = signal<string | null>(null);
   selectedEditionId: number | null = null;
   deleteModal: any;
 
-  constructor(private surveyEditionService: SurveyEditionService) {}
+  constructor(
+    private route: ActivatedRoute,
+    private surveyEditionService: SurveyEditionService
+  ) {}
 
   ngOnInit(): void {
-    if (this.surveyId) {
-      this.loadEditions();
+    const surveyIdParam = this.route.snapshot.paramMap.get('surveyId');
+    const surveyId = surveyIdParam ? +surveyIdParam : 0;
+
+    if (surveyId) {
+      this.loadEditions(surveyId);
     }
     this.deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
   }
 
-  loadEditions(): void {
+  loadEditions(surveyId: number): void {
     this.loading.set(true);
-    this.surveyEditionService.getEditionsBySurveyId(this.surveyId).subscribe({
+    this.surveyEditionService.getEditionsBySurveyId(surveyId).subscribe({
       next: (response: any) => {
-        this.editions.set(response.content);
+        const editions = response.content || response;
+        this.editions.set(editions);
+        // Assuming the first edition's survey is the same for all
+        this._survey.set(editions[0]?.survey);
         this.loading.set(false);
       },
-      error: (error: Error) => {
+      error: (error: HttpErrorResponse) => {
+        console.error('Erreur de chargement des éditions:', error);
         this.loading.set(false);
         this.error.set('Failed to load editions');
-        console.error(error);
       }
     });
   }
@@ -57,11 +69,13 @@ export class SurveyEditionListComponent implements OnInit {
       this.surveyEditionService.deleteEdition(this.selectedEditionId).subscribe({
         next: () => {
           this.deleteModal.hide();
-          this.loadEditions();
+          this.editions.update(editions => 
+            editions.filter(edition => edition.id !== this.selectedEditionId)
+          );
         },
-        error: (error: Error) => {
+        error: (error: HttpErrorResponse) => {
+          console.error('Erreur de suppression de l\'édition:', error);
           this.error.set('Failed to delete edition');
-          console.error(error);
           this.deleteModal.hide();
         }
       });
@@ -69,14 +83,20 @@ export class SurveyEditionListComponent implements OnInit {
   }
 
   createSurveyEdition(surveyEdition: SurveyEdition): void {
-    if (!this.surveyId) return;
+    const currentSurvey = this._survey();
+    if (!currentSurvey) return;
 
-    surveyEdition.surveyId = this.surveyId;
+    if (!surveyEdition.survey) {
+      surveyEdition.survey = currentSurvey;
+    } else {
+      surveyEdition.survey.id = currentSurvey.id;
+    }
+
     this.surveyEditionService.createEdition(surveyEdition).subscribe({
       next: (edition: SurveyEdition) => {
         this.editions.update(editions => [...editions, edition]);
       },
-      error: (error: Error) => {
+      error: (error: HttpErrorResponse) => {
         this.error.set('Failed to create edition');
         console.error(error);
       }

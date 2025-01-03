@@ -1,0 +1,37 @@
+<div class="survey-participation-container" *ngIf="surveyEdition">
+  <h1>Participation à {{ surveyEdition.title }}</h1>
+  
+  <div *ngIf="isLoading" class="loading-spinner">
+    Chargement...
+  </div>
+
+  <div *ngIf="errorMessage" class="error-message">
+    {{ errorMessage }}
+  </div>
+
+  <form [formGroup]="participationForm" (ngSubmit)="onSubmit()" *ngIf="!isLoading">
+    <div *ngFor="let subject of rootSubjects; let subjectIndex = index">
+      <h2>{{ subject.title }}</h2>
+      
+      <div *ngFor="let question of subject.questions; let questionIndex = index">
+        <div class="question-container">
+          <p>{{ question.text }}</p>
+          
+          <div *ngFor="let answer of question.answers" class="answer-option">
+            <input 
+              type="checkbox"
+              [id]="'answer-' + answer.id"
+              [checked]="participationForm.get('responses').at(questionIndex).get('answerIds').value.includes(answer.id)"
+              (change)="onAnswerSelect(questionIndex, answer.id)"
+            >
+            <label [for]="'answer-' + answer.id">{{ answer.text }}</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button type="submit" [disabled]="!participationForm.valid">
+      Soumettre ma participation
+    </button>
+  </form>
+</div>

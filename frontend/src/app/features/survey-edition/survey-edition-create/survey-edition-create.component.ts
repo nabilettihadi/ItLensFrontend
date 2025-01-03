@@ -7,8 +7,6 @@ import { SurveyEditionService } from '../../../core/services/survey-edition.serv
 import { HttpErrorResponse } from '@angular/common/http';
 import { SurveyService } from '../../../core/services/survey.service';
 import { Survey } from '../../../core/models/survey.model';
-import { Page } from '../../../core/models/page.model';
-import { SurveyReference } from '../../../core/models/survey-reference.model';
 
 @Component({
   selector: 'app-survey-edition-create',
@@ -43,8 +41,7 @@ export class SurveyEditionCreateComponent implements OnInit {
     this.editionForm = this.fb.group({
       year: [currentYear, [Validators.required, Validators.min(2000), Validators.max(2100)]],
       startDate: [new Date().toISOString().split('T')[0], Validators.required],
-      creationDate: [new Date().toISOString().split('T')[0], Validators.required],
-      status: ['DRAFT']
+      creationDate: [new Date().toISOString().split('T')[0], Validators.required]
     });
 
     // Subscribe to year changes to check for duplicates
@@ -81,7 +78,7 @@ export class SurveyEditionCreateComponent implements OnInit {
 
   loadSurveyDetails() {
     if (!this.surveyId) return;
-    
+
     this.loading = true;
     this.surveyService.getSurveyById(this.surveyId).subscribe({
       next: (survey) => {
@@ -98,7 +95,7 @@ export class SurveyEditionCreateComponent implements OnInit {
 
   loadSurveyEditionDetails(editionId: number): void {
     if (!editionId) return;
-    
+
     this.loading = true;
     this.surveyEditionService.getEditionById(editionId).subscribe({
       next: (edition: SurveyEdition) => {
@@ -106,8 +103,7 @@ export class SurveyEditionCreateComponent implements OnInit {
         this.editionForm.patchValue({
           year: edition.year,
           startDate: edition.startDate,
-          creationDate: edition.creationDate,
-          status: edition.status || 'DRAFT'
+          creationDate: edition.creationDate
         });
         this.loading = false;
       },
@@ -121,7 +117,7 @@ export class SurveyEditionCreateComponent implements OnInit {
 
   loadAvailableYears(): void {
     if (!this.surveyId) return;
-    
+
     this.loading = true;
     this.surveyEditionService.getEditionsBySurveyId(this.surveyId).subscribe({
       next: (editions: SurveyEdition[]) => {
@@ -161,7 +157,10 @@ export class SurveyEditionCreateComponent implements OnInit {
       this.loading = true;
       const editionData: Partial<SurveyEdition> = {
         ...this.editionForm.value,
-        surveyId: this.surveyId
+        survey: this.survey && this.survey.id ? { 
+          id: this.survey.id, 
+          title: this.survey.title || 'Untitled Survey' 
+        } : undefined // Use undefined if survey or survey.id is not available
       };
 
       this.surveyEditionService.createEdition(editionData).subscribe({
@@ -173,7 +172,6 @@ export class SurveyEditionCreateComponent implements OnInit {
           this.error = 'Failed to create survey edition';
           this.loading = false;
           console.error(err);
-          // Optionally, show a more detailed error to the user
           this.router.navigate(['/surveys']);
         }
       });
@@ -183,8 +181,9 @@ export class SurveyEditionCreateComponent implements OnInit {
   }
 
   onSubmit(): void {
-    if (this.editionForm.invalid || !this.surveyId) {
+    if (this.editionForm.invalid || !this.surveyId || !this.survey) {
       this.editionForm.markAllAsTouched();
+      this.error = 'Please select a valid survey and fill out all required fields';
       return;
     }
 
@@ -195,8 +194,10 @@ export class SurveyEditionCreateComponent implements OnInit {
       year: formValue.year,
       startDate: formValue.startDate,
       creationDate: formValue.creationDate,
-      status: formValue.status,
-      surveyId: this.surveyId
+      survey: this.survey && this.survey.id ? { 
+        id: this.survey.id, 
+        title: this.survey.title || 'Untitled Survey' 
+      } : undefined // Use undefined if survey or survey.id is not available
     };
 
     if (this.isEditMode && this.surveyEdition?.id) {
@@ -210,7 +211,7 @@ export class SurveyEditionCreateComponent implements OnInit {
     submitAction.subscribe({
       next: (savedEdition: SurveyEdition) => {
         this.loading = false;
-        this.router.navigate(['/surveys', this.surveyId, 'editions', savedEdition.id]);
+        this.router.navigate(['/survey-editions', savedEdition.id]);
       },
       error: (err: HttpErrorResponse) => {
         this.loading = false;
