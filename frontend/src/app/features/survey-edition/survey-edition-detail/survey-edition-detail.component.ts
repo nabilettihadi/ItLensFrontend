@@ -5,6 +5,7 @@ import { SurveyEdition } from '../../../core/models/survey-edition.model';
 import { SurveyEditionService } from '../../../core/services/survey-edition.service';
 import { SurveyService } from '../../../core/services/survey.service';
 import { Survey } from '../../../core/models/survey.model';
+import { Subject } from '../../../core/models/subject.model';
 import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
@@ -98,44 +99,101 @@ export class SurveyEditionDetailComponent implements OnInit {
     });
   }
 
-  editEdition(): void {
-    const currentEdition = this.edition();
-    if (currentEdition && currentEdition.id) {
-      this.router.navigate([
-        '/surveys',
-        currentEdition.survey,
-        'editions',
-        currentEdition.id,
-        'edit'
-      ]);
+  getEditionStatus(): string {
+    const edition = this.edition();
+    if (!edition) return 'Unknown';
+
+    const startDate = new Date(edition.startDate);
+    const now = new Date();
+
+    if (startDate > now) {
+      return 'Upcoming';
+    } else {
+      return 'Active';
     }
   }
 
-  goBack(): void {
-    const currentEdition = this.edition();
-    if (currentEdition) {
-      this.router.navigate(['/surveys', currentEdition.survey]);
-    } else {
-      this.router.navigate(['/surveys']);
+  getStatusClass(): string {
+    const status = this.getEditionStatus();
+    switch (status) {
+      case 'Upcoming':
+        return 'badge bg-info';
+      case 'Active':
+        return 'badge bg-success';
+      default:
+        return 'badge bg-secondary';
+    }
+  }
+
+  editEdition(): void {
+    const edition = this.edition();
+    if (edition && edition.survey) {
+      this.router.navigate(['/survey', edition.survey.id, 'editions', edition.id, 'edit']);
     }
   }
 
   deleteEdition(): void {
-    if (this.edition()) {
-      if (confirm('Are you sure you want to delete this edition?')) {
-        this.loading.set(true);
-        this.surveyEditionService.deleteEdition(this.edition()!.id!).subscribe({
-          next: () => {
-            this.loading.set(false);
-            this.router.navigate(['/surveys', this.survey()?.id]);
-          },
-          error: (err: Error) => {
-            this.error.set('Failed to delete edition');
-            this.loading.set(false);
-            console.error(err);
+    const edition = this.edition();
+    if (!edition || !edition.id) return;
+
+    if (confirm('Are you sure you want to delete this edition?')) {
+      this.loading.set(true);
+      this.surveyEditionService.deleteEdition(edition.id).subscribe({
+        next: () => {
+          this.loading.set(false);
+          if (edition.survey) {
+            this.router.navigate(['/survey', edition.survey.id, 'editions']);
+          } else {
+            this.router.navigate(['/surveys']);
           }
-        });
-      }
+        },
+        error: (err: Error) => {
+          this.error.set('Failed to delete edition');
+          this.loading.set(false);
+          console.error(err);
+        }
+      });
+    }
+  }
+
+  addSubject(): void {
+    const edition = this.edition();
+    if (edition && edition.survey) {
+      this.router.navigate(['/survey', edition.survey.id, 'editions', edition.id, 'subjects', 'new']);
+    }
+  }
+
+  viewSubject(subject: Subject): void {
+    const edition = this.edition();
+    if (edition && edition.survey) {
+      this.router.navigate(['/survey', edition.survey.id, 'editions', edition.id, 'subjects', subject.id]);
+    }
+  }
+
+  editSubject(subject: Subject): void {
+    const edition = this.edition();
+    if (edition && edition.survey) {
+      this.router.navigate(['/survey', edition.survey.id, 'editions', edition.id, 'subjects', subject.id, 'edit']);
+    }
+  }
+
+  deleteSubject(subject: Subject): void {
+    if (!subject.id) return;
+
+    if (confirm('Are you sure you want to delete this subject?')) {
+      this.loading.set(true);
+      // TODO: Implement subject deletion
+      console.log('Deleting subject:', subject.id);
+      this.loading.set(false);
+    }
+  }
+
+  navigateBack(): void {
+    const edition = this.edition();
+    if (edition && edition.survey) {
+      this.router.navigate(['/survey', edition.survey.id, 'editions']);
+    } else {
+      this.router.navigate(['/surveys']);
     }
   }
 }

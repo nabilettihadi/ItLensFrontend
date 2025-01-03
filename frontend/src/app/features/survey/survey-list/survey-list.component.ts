@@ -360,20 +360,14 @@ export class SurveyListComponent implements OnInit {
   }
 
   navigateToSurveyEdition(edition: SurveyEdition): void {
-    if (edition && edition.id) {
-      // Navigate to survey edition detail view
+    if (edition.id) {
       this.router.navigate(['/survey-editions', edition.id]);
     }
   }
 
   navigateToNewSurveyEdition(surveyId?: number): void {
-    if (surveyId && !isNaN(surveyId)) {
-      // Navigate to create new survey edition for this survey
-      this.router.navigate(['/survey-editions/new', surveyId]);
-    } else {
-      // Handle invalid survey ID
-      console.error('Invalid survey ID for creating new edition');
-      // Optionally show an error message or toast
+    if (surveyId) {
+      this.router.navigate([`/survey/${surveyId}/editions/new`]);
     }
   }
 }

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, tap } from 'rxjs/operators';
 import { SurveyEdition } from '../models/survey-edition.model';
 import { environment } from '../../../environments/environment';
 import { Page } from '../models/page.model';
@@ -29,28 +29,42 @@ export class SurveyEditionService {
     return this.http.get<SurveyEdition[]>(`${this.apiUrl}/survey/${surveyId}`);
   }
 
-  createEdition(edition: Partial<SurveyEdition>): Observable<SurveyEdition> {
-    // Validate surveyId before sending
-    if (!edition.survey?.id || isNaN(Number(edition.survey.id))) {
+  createEdition(edition: Partial<SurveyEdition> & { surveyId?: number }): Observable<SurveyEdition> {
+    if (!edition.surveyId || isNaN(Number(edition.surveyId))) {
       return throwError(() => new Error('Invalid survey ID'));
     }
 
-    const { id, ...editionWithoutId } = edition;
-    return this.http.post<SurveyEdition>(this.apiUrl, {
-      ...editionWithoutId,
-      surveyId: Number(edition.survey.id)  // Explicitly convert to number
-    }).pipe(
-      catchError(error => {
-        console.error('Survey Edition Creation Error', error);
-        return throwError(() => new Error(
-          error.error?.message || 'Unknown error occurred'
-        ));
+    // Format dates to local format (YYYY-MM-DD)
+    const payload = {
+      year: edition.year,
+      startDate: edition.startDate,  // Keep as YYYY-MM-DD
+      creationDate: edition.creationDate,  // Keep as YYYY-MM-DD
+      surveyId: edition.surveyId
+    };
+
+    console.log('Creating survey edition with payload:', payload);
+
+    return this.http.post<SurveyEdition>(this.apiUrl, payload).pipe(
+      tap(response => console.log('Survey edition created successfully:', response)),
+      catchError((error: HttpErrorResponse) => {
+        console.error('Survey Edition Creation Error:', error);
+        if (error.error?.message) {
+          return throwError(() => new Error(error.error.message));
+        }
+        // Log the full error details
+        if (error.error) {
+          console.error('Error details:', error.error);
+        }
+        return throwError(() => error);
       })
     );
   }
 
-  updateEdition(id: number, edition: Partial<SurveyEdition>): Observable<SurveyEdition> {
-    return this.http.put<SurveyEdition>(`${this.apiUrl}/${id}`, edition);
+  updateEdition(edition: SurveyEdition): Observable<SurveyEdition> {
+    if (!edition.id) {
+      return throwError(() => new Error('Edition ID is required for update'));
+    }
+    return this.http.put<SurveyEdition>(`${this.apiUrl}/${edition.id}`, edition);
   }
 
   deleteEdition(id: number): Observable<void> {

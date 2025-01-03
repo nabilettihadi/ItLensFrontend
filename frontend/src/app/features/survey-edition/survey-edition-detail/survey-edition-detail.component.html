@@ -12,7 +12,7 @@
   <ng-container *ngIf="edition()">
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center">
-        <h2>Survey Edition Details</h2>
+        <h2>{{ survey()?.title }} - Edition {{ edition()?.year }}</h2>
         <div class="btn-group">
           <button class="btn btn-sm btn-outline-primary" (click)="editEdition()">
             <i class="bi bi-pencil"></i> Edit
@@ -23,42 +23,95 @@
         </div>
       </div>
       <div class="card-body">
-        <div class="row">
-          <div class="col-md-6">
-            <h4>Basic Information</h4>
-            <p><strong>Year:</strong> {{ edition()?.year }}</p>
-            <p><strong>Creation Date:</strong> {{ edition()?.creationDate | date }}</p>
-            <p><strong>Start Date:</strong> {{ edition()?.startDate | date }}</p>
+        <!-- Survey Information -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <h4 class="mb-0">Survey Information</h4>
           </div>
-          <div class="col-md-6">
-            <h4>Survey Information</h4>
-            <p><strong>Survey Title:</strong> {{ survey()?.title }}</p>
-            <p><strong>Survey Description:</strong> {{ survey()?.description }}</p>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <p><strong>Title:</strong> {{ survey()?.title }}</p>
+                <p><strong>Description:</strong> {{ survey()?.description }}</p>
+              </div>
+              <div class="col-md-6">
+                <p><strong>Owner:</strong> {{ survey()?.owner?.name || 'Not specified' }}</p>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div class="mt-4">
-          <h4>Subjects</h4>
-          <table *ngIf="edition()?.subjects?.length" class="table table-striped">
-            <thead>
-              <tr>
-                <th>Subject Name</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let subject of edition()?.subjects">
-                <td>{{ subject.title }}</td>
-              </tr>
-            </tbody>
-          </table>
-          <p *ngIf="!edition()?.subjects?.length" class="text-muted">
-            No subjects found for this survey edition.
-          </p>
+        <!-- Edition Information -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <h4 class="mb-0">Edition Details</h4>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <p><strong>Year:</strong> {{ edition()?.year }}</p>
+                <p><strong>Creation Date:</strong> {{ edition()?.creationDate | date }}</p>
+              </div>
+              <div class="col-md-6">
+                <p><strong>Start Date:</strong> {{ edition()?.startDate | date }}</p>
+                <p><strong>Status:</strong> 
+                  <span [class]="getStatusClass()">
+                    {{ getEditionStatus() }}
+                  </span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Subjects -->
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Subjects</h4>
+            <button class="btn btn-sm btn-primary" (click)="addSubject()">
+              <i class="bi bi-plus"></i> Add Subject
+            </button>
+          </div>
+          <div class="card-body">
+            <div *ngIf="!edition()?.subjects?.length" class="alert alert-info">
+              No subjects have been added to this edition yet.
+            </div>
+            <div class="table-responsive" *ngIf="edition()?.subjects?.length">
+              <table class="table table-striped">
+                <thead>
+                  <tr>
+                    <th>Title</th>
+                    <th>Questions</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let subject of edition()?.subjects">
+                    <td>{{ subject.title }}</td>
+                    <td>{{ subject.questions?.length || 0 }}</td>
+                    <td>
+                      <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-primary" (click)="viewSubject(subject)">
+                          <i class="bi bi-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" (click)="editSubject(subject)">
+                          <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" (click)="deleteSubject(subject)">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
       <div class="card-footer">
-        <button class="btn btn-secondary" (click)="goBack()">
-          <i class="bi bi-arrow-left"></i> Back to Survey
+        <button class="btn btn-secondary" (click)="navigateBack()">
+          <i class="bi bi-arrow-left"></i> Back
         </button>
       </div>
     </div>
