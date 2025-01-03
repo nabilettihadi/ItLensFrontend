@@ -150,20 +150,14 @@
 
             <!-- Survey Actions -->
             <div class="mt-3 d-flex justify-content-between">
-              <a 
-                class="btn btn-sm btn-outline-info" 
-                [routerLink]="['/surveys', survey.id]">
-                View Details
-              </a>
-              <button 
-                class="btn btn-sm btn-outline-warning" 
-                (click)="startEditing(survey)">
-                Edit Survey
+              <button class="btn btn-sm btn-outline-primary" (click)="navigateToSurveyDetails(survey.id)">
+                <i class="bi bi-eye"></i> View Details
               </button>
-              <button 
-                class="btn btn-sm btn-outline-danger" 
-                (click)="confirmDelete(survey)">
-                Delete Survey
+              <button class="btn btn-sm btn-outline-secondary" [routerLink]="['/surveys/edit', survey.id]">
+                <i class="bi bi-pencil"></i> Edit Survey
+              </button>
+              <button class="btn btn-sm btn-outline-danger" (click)="confirmDelete(survey)">
+                <i class="bi bi-trash"></i> Delete
               </button>
             </div>
           </div>
@@ -182,11 +176,11 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        Are you sure you want to delete the survey "{{ selectedSurvey?.title }}"? This action cannot be undone.
+        Are you sure you want to delete this survey?
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-danger" (click)="deleteSurvey()">Delete</button>
+        <button type="button" class="btn btn-danger" (click)="deleteSurvey(selectedSurvey!)">Delete</button>
       </div>
     </div>
   </div>

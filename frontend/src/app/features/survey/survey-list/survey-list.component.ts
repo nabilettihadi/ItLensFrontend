@@ -312,15 +312,14 @@ export class SurveyListComponent implements OnInit {
     });
   }
 
-  confirmDelete(survey: Survey): void {
-    if (!survey.id) {
-      console.error('Cannot delete survey without an ID');
-      return;
+  navigateToSurveyDetails(surveyId: number | undefined): void {
+    if (surveyId) {
+      this.router.navigate(['/surveys', surveyId]);
     }
+  }
 
-    // Assuming you have a modal for confirmation
+  confirmDelete(survey: Survey): void {
     this.selectedSurvey = survey;
-    // Trigger modal open (you might need to use ViewChild or a service to control modal)
     const deleteModal = document.getElementById('deleteConfirmModal');
     if (deleteModal) {
       // @ts-ignore
@@ -328,22 +327,14 @@ export class SurveyListComponent implements OnInit {
     }
   }
 
-  deleteSurvey(): void {
-    if (!this.selectedSurvey || !this.selectedSurvey.id) {
-      this.error.set('No survey selected for deletion');
-      return;
-    }
+  deleteSurvey(survey: Survey): void {
+    if (!survey || !survey.id) return;
 
-    this.processingOwner.set(true);
-    this.surveyService.deleteSurvey(this.selectedSurvey.id).subscribe({
+    this.loading.set(true);
+    this.surveyService.deleteSurvey(survey.id).subscribe({
       next: () => {
-        // Remove the deleted survey from the list
-        this.surveys.update(surveys => 
-          surveys.filter(s => s.id !== this.selectedSurvey!.id)
-        );
-        this.selectedSurvey = null;
-        this.processingOwner.set(false);
-        
+        this.loading.set(false);
+        this.loadSurveys();
         // Close the modal
         const deleteModal = document.getElementById('deleteConfirmModal');
         if (deleteModal) {
@@ -352,9 +343,9 @@ export class SurveyListComponent implements OnInit {
         }
       },
       error: (err: Error) => {
-        console.error('Échec de la suppression du sondage', err);
-        this.error.set('Échec de la suppression du sondage');
-        this.processingOwner.set(false);
+        this.error.set('Failed to delete survey');
+        this.loading.set(false);
+        console.error(err);
       }
     });
   }
