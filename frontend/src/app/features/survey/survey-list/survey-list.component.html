@@ -4,162 +4,149 @@
       <h1 class="text-center">Surveys</h1>
     </div>
 
-    <!-- Draft Survey Card -->
-    <div *ngIf="isCreatingNew" class="card mb-3">
-      <div class="card-header bg-primary text-white">
-        Create New Survey
-        <button class="btn btn-sm btn-light float-end" (click)="cancelCreatingNew()">
-          <i class="bi bi-x-lg"></i>
-        </button>
-      </div>
-      <div class="card-body">
-        <form (ngSubmit)="createNewSurvey()" #draftSurveyForm="ngForm">
-          <div class="mb-3">
-            <label for="draftTitle" class="form-label">Survey Title</label>
-            <input 
-              type="text" 
-              class="form-control" 
-              id="draftTitle" 
-              name="title"
-              [(ngModel)]="draftSurveyTitle"
-              required
-              minlength="3"
-              #titleInput="ngModel"
-            >
-            <div 
-              *ngIf="titleInput.invalid && (titleInput.dirty || titleInput.touched)" 
-              class="text-danger"
-            >
-              <small *ngIf="titleInput.errors?.['required']">Title is required</small>
-              <small *ngIf="titleInput.errors?.['minlength']">Title must be at least 3 characters</small>
-            </div>
-          </div>
-
-          <div class="mb-3">
-            <label for="draftDescription" class="form-label">Description</label>
-            <textarea 
-              class="form-control" 
-              id="draftDescription" 
-              name="description"
-              [(ngModel)]="draftSurveyDescription"
-              required
-              minlength="10"
-              #descriptionInput="ngModel"
-            ></textarea>
-            <div 
-              *ngIf="descriptionInput.invalid && (descriptionInput.dirty || descriptionInput.touched)" 
-              class="text-danger"
-            >
-              <small *ngIf="descriptionInput.errors?.['required']">Description is required</small>
-              <small *ngIf="descriptionInput.errors?.['minlength']">Description must be at least 10 characters</small>
-            </div>
-          </div>
-
-          <div class="mb-3">
-            <label for="draftOwner" class="form-label">Owner Name</label>
-            <input 
-              type="text" 
-              class="form-control" 
-              id="draftOwner" 
-              name="owner"
-              [(ngModel)]="draftSurveyOwnerName"
-              required
-              #ownerInput="ngModel"
-            >
-            <div 
-              *ngIf="ownerInput.invalid && (ownerInput.dirty || ownerInput.touched)" 
-              class="text-danger"
-            >
-              <small *ngIf="ownerInput.errors?.['required']">Owner name is required</small>
-            </div>
-          </div>
-
-          <!-- Global Error Message -->
-          <div *ngIf="creationError" class="alert alert-danger">
-            {{ creationError }}
-          </div>
-
-          <div class="d-flex justify-content-end">
-            <button 
-              type="submit" 
-              class="btn btn-primary"
-              [disabled]="draftSurveyForm.invalid"
-            >
-              Create Survey
-            </button>
-          </div>
-        </form>
-      </div>
+    <!-- Create Survey Button -->
+    <div class="col-12 mb-3">
+      <button 
+        class="btn btn-success" 
+        (click)="startCreatingNew()"
+        *ngIf="!isCreatingNew">
+        <i class="bi bi-plus-lg me-2"></i>Create Survey
+      </button>
     </div>
 
-    <!-- Existing Surveys List -->
-    <div class="row">
-      <div class="col-12 mb-3">
-        <button 
-          class="btn btn-success" 
-          (click)="startCreatingNew()"
-          *ngIf="!isCreatingNew"
-        >
-          <i class="bi bi-plus-lg me-2"></i>Create Survey
-        </button>
-      </div>
-
-      <!-- Existing Survey Cards -->
-      <div class="col-md-4 mb-4" *ngFor="let survey of surveys(); trackBy: trackBySurveyId">
-        <div class="card h-100 shadow-sm">
-          <div class="card-body">
-            <h5 class="card-title text-dark">{{ survey.title }}</h5>
-            <p class="card-text text-muted">{{ survey.description }}</p>
-            
-            <!-- Owner Information -->
-            <div class="mb-2">
-              <strong>Owner:</strong> 
-              {{ survey.owner && survey.owner.name ? survey.owner.name : 'No Owner' }}
-            </div>
-
-            <!-- Survey Editions Section -->
-            <div class="mt-3">
-              <div class="d-flex align-items-center">
-                <span class="me-2 fw-bold">Editions:</span>
-                <div class="d-flex flex-wrap gap-2 me-2">
-                  <ng-container *ngIf="getEditionsForSurvey(survey.id) as editions">
-                    <div class="btn-group" role="group" aria-label="Survey Editions">
-                      <ng-container *ngIf="survey.id && editions.length > 0; else noEditions">
-                        <button 
-                          *ngFor="let edition of editions" 
-                          class="btn btn-sm btn-outline-primary me-1"
-                          (click)="navigateToSurveyEdition(edition)">
-                          {{ edition.year }}
-                        </button>
-                      </ng-container>
-                      <ng-template #noEditions>
-                        <span class="text-muted">No editions</span>
-                      </ng-template>
-                      
-                      <button 
-                        *ngIf="survey.id"
-                        class="btn btn-sm btn-success" 
-                        (click)="navigateToNewSurveyEdition(survey.id)">
-                        <i class="bi bi-plus"></i> New Edition
-                      </button>
-                    </div>
-                  </ng-container>
-                </div>
+    <!-- Draft Survey Form -->
+    <div *ngIf="isCreatingNew" class="col-12 mb-4">
+      <div class="card">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Create New Survey</h5>
+          <button class="btn btn-light btn-sm" (click)="cancelCreatingNew()">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <div class="card-body">
+          <form (ngSubmit)="createNewSurvey()" #draftSurveyForm="ngForm">
+            <div class="mb-3">
+              <label for="draftTitle" class="form-label">Survey Title</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                id="draftTitle" 
+                name="title"
+                [(ngModel)]="draftSurveyTitle"
+                required
+                minlength="3"
+                #titleInput="ngModel">
+              <div 
+                *ngIf="titleInput.invalid && (titleInput.dirty || titleInput.touched)" 
+                class="text-danger">
+                <small *ngIf="titleInput.errors?.['required']">Title is required</small>
+                <small *ngIf="titleInput.errors?.['minlength']">Title must be at least 3 characters</small>
               </div>
             </div>
 
-            <!-- Survey Actions -->
-            <div class="mt-3 d-flex justify-content-between">
-              <button class="btn btn-sm btn-outline-primary" (click)="navigateToSurveyDetails(survey.id)">
-                <i class="bi bi-eye"></i> View Details
-              </button>
-              <button class="btn btn-sm btn-outline-secondary" [routerLink]="['/surveys/edit', survey.id]">
-                <i class="bi bi-pencil"></i> Edit Survey
-              </button>
-              <button class="btn btn-sm btn-outline-danger" (click)="confirmDelete(survey)">
-                <i class="bi bi-trash"></i> Delete
+            <div class="mb-3">
+              <label for="draftDescription" class="form-label">Description</label>
+              <textarea 
+                class="form-control" 
+                id="draftDescription" 
+                name="description"
+                [(ngModel)]="draftSurveyDescription"
+                required
+                minlength="10"
+                #descriptionInput="ngModel"></textarea>
+              <div 
+                *ngIf="descriptionInput.invalid && (descriptionInput.dirty || descriptionInput.touched)" 
+                class="text-danger">
+                <small *ngIf="descriptionInput.errors?.['required']">Description is required</small>
+                <small *ngIf="descriptionInput.errors?.['minlength']">Description must be at least 10 characters</small>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="draftOwner" class="form-label">Owner Name</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                id="draftOwner" 
+                name="owner"
+                [(ngModel)]="draftSurveyOwnerName"
+                required
+                #ownerInput="ngModel">
+              <div 
+                *ngIf="ownerInput.invalid && (ownerInput.dirty || ownerInput.touched)" 
+                class="text-danger">
+                <small *ngIf="ownerInput.errors?.['required']">Owner name is required</small>
+              </div>
+            </div>
+
+            <div *ngIf="creationError" class="alert alert-danger">
+              {{ creationError }}
+            </div>
+
+            <div class="d-flex justify-content-end">
+              <button 
+                type="submit" 
+                class="btn btn-primary"
+                [disabled]="draftSurveyForm.invalid">
+                Create Survey
               </button>
             </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Survey List -->
+    <div class="col-md-4 mb-4" *ngFor="let survey of surveys(); trackBy: trackBySurveyId">
+      <div class="card h-100">
+        <div class="card-body">
+          <h5 class="card-title">{{ survey.title }}</h5>
+          <p class="card-text">{{ survey.description }}</p>
+          
+          <!-- Owner Information -->
+          <div class="mb-3">
+            <strong>Owner:</strong> 
+            {{ survey.owner && survey.owner.name ? survey.owner.name : 'No Owner' }}
+          </div>
+
+          <!-- Survey Editions -->
+          <div class="editions-container mb-3">
+            <h6 class="text-muted">Editions</h6>
+            <div class="d-flex flex-wrap gap-2">
+              <ng-container *ngIf="getEditionsForSurvey(survey.id) as editions">
+                <ng-container *ngIf="survey.id && editions.length > 0; else noEditions">
+                  <button 
+                    *ngFor="let edition of editions" 
+                    class="btn btn-sm btn-outline-primary"
+                    (click)="navigateToSurveyEdition(edition)">
+                    {{ edition.year }}
+                  </button>
+                </ng-container>
+                <ng-template #noEditions>
+                  <span class="text-muted">No editions</span>
+                </ng-template>
+                
+                <button 
+                  *ngIf="survey.id"
+                  class="btn btn-sm btn-success" 
+                  (click)="navigateToNewSurveyEdition(survey.id)">
+                  <i class="bi bi-plus"></i> New Edition
+                </button>
+              </ng-container>
+            </div>
+          </div>
+
+          <!-- Survey Actions -->
+          <div class="mt-3 d-flex justify-content-between">
+            <button class="btn btn-sm btn-outline-primary" (click)="navigateToSurveyDetails(survey.id)">
+              <i class="bi bi-eye"></i> View Details
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" [routerLink]="['/surveys/edit', survey.id]">
+              <i class="bi bi-pencil"></i> Edit
+            </button>
+            <button class="btn btn-sm btn-outline-danger" (click)="confirmDelete(survey)">
+              <i class="bi bi-trash"></i> Delete
+            </button>
           </div>
         </div>
       </div>
@@ -167,7 +154,7 @@
   </div>
 </div>
 
-<!-- Delete Modal -->
+<!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">

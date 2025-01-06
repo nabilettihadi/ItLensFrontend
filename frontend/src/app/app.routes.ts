@@ -31,21 +31,19 @@ export const routes: Routes = [
   { path: 'surveys', component: SurveyListComponent },
   { path: 'surveys/new', component: SurveyCreateComponent },
   { path: 'surveys/:id', component: SurveyDetailComponent },
-  { path: 'surveys/edit/:id', component: SurveyEditComponent },
+  { path: 'surveys/:id/edit', component: SurveyEditComponent },
 
   // Survey Edition Routes (Standalone)
   { path: 'survey-editions', component: SurveyEditionListComponent },
-  { path: 'survey/:surveyId/editions', component: SurveyEditionListComponent },
-  { path: 'survey/:surveyId/editions/new', component: SurveyEditionCreateComponent },
-  { path: 'survey/:surveyId/editions/:editionId/edit', component: SurveyEditionCreateComponent },
-  { path: 'survey-editions/:editionId', component: SurveyEditionDetailComponent },
-  { path: 'surveys/:surveyId/editions/:editionId', component: SurveyEditionDetailComponent },
+  { path: 'survey-editions/new', component: SurveyEditionCreateComponent },
+  { path: 'survey-editions/:id', component: SurveyEditionDetailComponent },
+  { path: 'survey/:surveyId/editions/:year', component: SurveyEditionDetailComponent },
 
   // Subject Routes (Standalone)
   { path: 'subjects', component: SubjectListComponent },
   { path: 'subjects/new', component: SubjectCreateComponent },
   { path: 'subjects/:id', component: SubjectDetailComponent },
-  { path: 'subjects/edit/:id', component: SubjectEditComponent },
+  { path: 'subjects/:id/edit', component: SubjectEditComponent },
 
   // Question Routes (Standalone)
   { path: 'questions', component: QuestionListComponent },

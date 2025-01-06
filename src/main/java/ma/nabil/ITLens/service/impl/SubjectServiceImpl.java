@@ -31,22 +31,41 @@ public class SubjectServiceImpl extends GenericServiceImpl<Subject, SubjectDTO, 
     }
 
     @Override
-    public SubjectDTO create(SubjectDTO subjectDTO) {
-        SurveyEdition surveyEdition = surveyEditionRepository.findById(subjectDTO.getSurveyEditionId())
-                .orElseThrow(() -> new ResourceNotFoundException("SurveyEdition", subjectDTO.getSurveyEditionId()));
+public SubjectDTO create(SubjectDTO subjectDTO) {
+    // Récupérer l'édition de sondage
+    SurveyEdition surveyEdition = surveyEditionRepository.findById(subjectDTO.getSurveyEditionId())
+            .orElseThrow(() -> new ResourceNotFoundException("SurveyEdition", subjectDTO.getSurveyEditionId()));
 
-        if (subjectDTO.getParentId() != null) {
-            Subject parentSubject = subjectRepository.findById(subjectDTO.getParentId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Parent Subject", subjectDTO.getParentId()));
-            if (!parentSubject.getSurveyEdition().getId().equals(surveyEdition.getId())) {
-                throw new InvalidSubjectException("Le sujet parent doit avoir le même ID d'édition d'enquête.");
-            }
+    // Convertir le DTO en entité
+    Subject subject = mapper.toEntity(subjectDTO);
+    subject.setSurveyEdition(surveyEdition);
+
+    // Gérer le parent si présent
+    if (subjectDTO.getParentId() != null) {
+        Subject parentSubject = subjectRepository.findById(subjectDTO.getParentId())
+                .orElseThrow(() -> new ResourceNotFoundException("Parent Subject", subjectDTO.getParentId()));
+        
+        // Vérifier que le parent appartient à la même édition de sondage
+        if (!parentSubject.getSurveyEdition().getId().equals(surveyEdition.getId())) {
+            throw new InvalidSubjectException("Le sujet parent doit avoir le même ID d'édition d'enquête.");
         }
-
-        Subject subject = new Subject();
-        subject.setSurveyEdition(surveyEdition);
-        return subjectDTO;
+        
+        // Sauvegarder le parent d'abord si nécessaire
+        if (parentSubject.getId() == null) {
+            parentSubject = subjectRepository.save(parentSubject);
+        }
+        
+        subject.setParent(parentSubject);
+    } else {
+        // Explicitement définir le parent à null si aucun parent n'est fourni
+        subject.setParent(null);
     }
+
+    // Sauvegarder le sujet
+    Subject savedSubject = subjectRepository.save(subject);
+    
+    return mapper.toDto(savedSubject);
+}
 
     @Override
     public List<SubjectDTO> getRootSubjects(Integer surveyEditionId) {

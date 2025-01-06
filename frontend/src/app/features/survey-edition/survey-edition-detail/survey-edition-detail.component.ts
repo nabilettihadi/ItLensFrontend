@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { SurveyEdition } from '../../../core/models/survey-edition.model';
@@ -15,11 +15,13 @@ import { HttpErrorResponse } from '@angular/common/http';
   templateUrl: './survey-edition-detail.component.html',
   styleUrls: ['./survey-edition-detail.component.css']
 })
-export class SurveyEditionDetailComponent implements OnInit {
+export class SurveyEditionDetailComponent {
   edition = signal<SurveyEdition | null>(null);
   survey = signal<Survey | null>(null);
   loading = signal<boolean>(false);
   error = signal<string | null>(null);
+  expandedSubjects = signal<Set<number>>(new Set<number>());
+  selectedSubject = signal<Subject | null>(null);
 
   constructor(
     private route: ActivatedRoute,
@@ -30,13 +32,49 @@ export class SurveyEditionDetailComponent implements OnInit {
 
   ngOnInit(): void {
     this.route.params.subscribe(params => {
-      const surveyId = +params['surveyId'];
-      const year = +params['year'];
+      if (params['id']) {
+        // Si nous avons un ID direct d'édition
+        this.loadEdition(+params['id']);
+      } else if (params['surveyId'] && params['year']) {
+        // Si nous avons un ID de survey et une année
+        this.loadEditionByYearAndSurveyId(+params['surveyId'], +params['year']);
+      } else {
+        this.error.set('Invalid URL parameters');
+      }
+    });
+  }
 
-      if (surveyId && year) {
-        this.loadEditionByYearAndSurveyId(surveyId, year);
-      } else if (params['editionId']) {
-        this.loadEdition(+params['editionId']);
+  loadEdition(editionId: number): void {
+    this.loading.set(true);
+    this.error.set(null);
+    
+    this.surveyEditionService.getEditionById(editionId).subscribe({
+      next: (edition: SurveyEdition) => {
+        this.edition.set(edition);
+        if (edition.survey?.id) {
+          this.loadSurveyDetails(edition.survey.id);
+        } else {
+          this.loading.set(false);
+        }
+      },
+      error: (error: any) => {
+        console.error('Error loading edition:', error);
+        this.error.set('Failed to load edition details');
+        this.loading.set(false);
+      }
+    });
+  }
+
+  loadSurveyDetails(surveyId: number): void {
+    this.surveyService.getSurveyById(surveyId).subscribe({
+      next: (survey: Survey) => {
+        this.survey.set(survey);
+        this.loading.set(false);
+      },
+      error: (error: any) => {
+        console.error('Error loading survey:', error);
+        this.error.set('Failed to load survey details');
+        this.loading.set(false);
       }
     });
   }
@@ -62,33 +100,6 @@ export class SurveyEditionDetailComponent implements OnInit {
         } else {
           this.error.set('Edition not found');
           this.loading.set(false);
-        }
-      },
-      error: (err: Error) => {
-        this.error.set('Failed to load edition details');
-        this.loading.set(false);
-        console.error(err);
-      }
-    });
-  }
-
-  loadEdition(editionId: number): void {
-    this.loading.set(true);
-    this.surveyEditionService.getEditionById(editionId).subscribe({
-      next: (edition: SurveyEdition) => {
-        this.edition.set(edition);
-        if (edition.survey) {
-          this.surveyService.getSurveyById(edition.survey.id).subscribe({
-            next: (survey) => {
-              this.survey.set(survey);
-              this.loading.set(false);
-            },
-            error: (err: Error) => {
-              this.error.set('Failed to load survey details');
-              this.loading.set(false);
-              console.error(err);
-            }
-          });
         }
       },
       error: (err: Error) => {
@@ -195,5 +206,40 @@ export class SurveyEditionDetailComponent implements OnInit {
     } else {
       this.router.navigate(['/surveys']);
     }
+  }
+
+  // Méthodes pour la gestion des sujets
+  getRootSubjects(): Subject[] {
+    return this.edition()?.subjects?.filter(subject => !subject.parentId) || [];
+  }
+
+  getChildSubjects(parentId: number): Subject[] {
+    return this.edition()?.subjects?.filter(subject => subject.parentId === parentId) || [];
+  }
+
+  hasChildren(subject: Subject): boolean {
+    return this.edition()?.subjects?.some(s => s.parentId === subject.id) || false;
+  }
+
+  isExpanded(subjectId: number): boolean {
+    return this.expandedSubjects().has(subjectId);
+  }
+
+  toggleSubject(subjectId: number): void {
+    const expanded = new Set(this.expandedSubjects());
+    if (expanded.has(subjectId)) {
+      expanded.delete(subjectId);
+    } else {
+      expanded.add(subjectId);
+    }
+    this.expandedSubjects.set(expanded);
+  }
+
+  selectSubject(subject: Subject): void {
+    this.selectedSubject.set(subject);
+  }
+
+  getSelectedSubjectQuestions(): any[] {
+    return this.selectedSubject()?.questions || [];
   }
 }
